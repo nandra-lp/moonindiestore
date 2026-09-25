@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function myUid() { return request.auth.uid; }
+    function myRole() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(myUid()))
+        ? get(/databases/$(database)/documents/users/$(myUid())).data.role
+        : null;
+    }
+    function isAdmin() { return myRole() == 'admin'; }
+    function isOwner() { return myRole() == 'owner'; }
+    function isCustomer() { return myRole() == 'customer'; }
+    // Dokumen pelanggan milik user yang sedang login (field uid == auth.uid).
+    function pelangganMilikSaya(idp) {
+      return idp != null
+        && exists(/databases/$(database)/documents/pelanggan/$(idp))
+        && get(/databases/$(database)/documents/pelanggan/$(idp)).data.uid == myUid();
+    }
+    // Order milik customer yang sedang login (via id_pelanggan -> pelanggan.uid).
+    // Versi READ: menggunakan get() standar.
+    function orderMilikCustomerRead(orderId) {
+      let path = /databases/$(database)/documents/orders/$(orderId);
+      return isCustomer()
+        && exists(path)
+        && pelangganMilikSaya(get(path).data.id_pelanggan);
+    }
+    
+    // Versi WRITE: mendukung batch write (menggunakan getAfter jika belum eksis).
+    function orderMilikCustomerWrite(orderId) {
+      let path = /databases/$(database)/documents/orders/$(orderId);
+      return isCustomer()
+        && (
+             (exists(path) && pelangganMilikSaya(get(path).data.id_pelanggan)) ||
+             (existsAfter(path) && pelangganMilikSaya(getAfter(path).data.id_pelanggan))
+           );
+    }
+
+    // Profil role: hanya pemilik + admin yang bisa baca; pembuatan customer
+    // diizinkan saat registrasi (doc id harus == uid, role harus customer).
+    match /users/{uid} {
+      allow read: if signedIn() && (myUid() == uid || isAdmin());
+      allow create: if signedIn() && myUid() == uid
+        && request.resource.data.role == 'customer'
+        && request.resource.data.uid == myUid();
+      allow update, delete: if isAdmin();
+    }
+
+    match /pelanggan/{id} {
+      // Customer: baca/tulis hanya dokumen miliknya (field uid == auth.uid).
+      // Admin: full akses. Owner: baca semua (laporan), tanpa tulis.
+      // Create boleh oleh user login mana pun untuk uid-nya sendiri agar
+      // registrasi & auto-provision saat login tidak deadlock (tanpa
+      // bergantung pada dokumen role yang belum ada).
+      allow read: if isAdmin() || isOwner()
+        || (isCustomer() && resource.data.uid == myUid());
+      allow create: if isAdmin()
+        || (signedIn() && request.resource.data.uid == myUid());
+      allow update: if isAdmin()
+        || (isCustomer() && resource.data.uid == myUid()
+            && request.resource.data.uid == myUid());
+      allow delete: if isAdmin();
+    }
+
+    match /produk/{id} {
+      allow read: if true; // katalog publik
+      allow write: if isAdmin();
+    }
+
+    match /orders/{id} {
+      allow read: if isAdmin() || isOwner()
+        || (isCustomer() && resource.data.id_pelanggan != null
+            && get(/databases/$(database)/documents/pelanggan/$(resource.data.id_pelanggan)).data.uid == myUid());
+      // Customer hanya boleh membuat order untuk dirinya sendiri.
+      allow create: if isAdmin()
+        || (isCustomer() && pelangganMilikSaya(request.resource.data.id_pelanggan));
+      allow update: if isAdmin();
+      // Customer boleh menghapus ordernya yang masih menunggu (untuk rollback
+      // pembuatan yang gagal di tengah jalan). Selebihnya hanya admin.
+      allow delete: if isAdmin()
+        || (orderMilikCustomerWrite(id) && resource.data.status_order == 'menunggu');
+    }
+
+    match /detail_order/{id} {
+      // Customer hanya boleh membaca item pada order miliknya sendiri.
+      allow read: if isAdmin() || isOwner()
+        || (isCustomer() && orderMilikCustomerRead(resource.data.id_order));
+      // Customer boleh menambah/menghapus item pada order miliknya yang masih menunggu.
+      allow create: if isAdmin()
+        || (isCustomer() && orderMilikCustomerWrite(request.resource.data.id_order));
+      allow update: if isAdmin();
+      allow delete: if isAdmin()
+        || (orderMilikCustomerWrite(resource.data.id_order)
+            && get(/databases/$(database)/documents/orders/$(resource.data.id_order)).data.status_order == 'menunggu');
+    }
+
+    match /produksi/{id} {
+      // Customer hanya boleh membaca progres order miliknya sendiri.
+      allow read: if isAdmin() || isOwner()
+        || (isCustomer() && orderMilikCustomerRead(resource.data.id_order));
+      allow write: if isAdmin();
+    }
+
+    match /tracking_order/{id} {
+      // Customer hanya boleh membaca tracking order miliknya sendiri.
+      allow read: if isAdmin() || isOwner()
+        || (isCustomer() && orderMilikCustomerRead(resource.data.id_order));
+      // Customer hanya boleh mencatat entri awal "Order dibuat" pada order miliknya.
+      allow create: if isAdmin()
+        || (orderMilikCustomerWrite(request.resource.data.id_order)
+            && request.resource.data.status == 'Order dibuat');
+      allow update: if isAdmin();
+      // Customer boleh menghapus tracking order miliknya yang masih menunggu
+      // (untuk pembatalan pesanan oleh customer).
+      allow delete: if isAdmin()
+        || (orderMilikCustomerWrite(resource.data.id_order)
+            && get(/databases/$(database)/documents/orders/$(resource.data.id_order)).data.status_order == 'menunggu');
+    }
+
+    match /perkiraan_harga/{id} {
+      allow read: if isAdmin() || isOwner()
+        || (isCustomer() && resource.data.id_pelanggan != null
+            && get(/databases/$(database)/documents/pelanggan/$(resource.data.id_pelanggan)).data.uid == myUid());
+      allow create: if isAdmin() || isCustomer();
+      allow update, delete: if isAdmin();
+    }
+  }
+}

@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
+/* Palet brand Moon Indie Store (dari logo) */
+@theme {
+  --color-moon-yellow: #ffed00;
+  --color-moon-blue: #00aeef;
+  --color-moon-pink: #ff006e;
+  --color-moon-ink: #0a0a0a;
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Light-first agar palet brand selalu konsisten di semua perangkat. */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #0a0a0a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: #ffed00;
+  color: #0a0a0a;
+}
+
+/* Fokus aksesibel memakai biru brand di semua form. */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #00aeef !important;
+  outline: 2px solid rgba(0, 174, 239, 0.35);
+  outline-offset: 1px;
+}
+
+code {
+  background: rgba(10, 10, 10, 0.06);
+  border-radius: 0.375rem;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.85em;
 }

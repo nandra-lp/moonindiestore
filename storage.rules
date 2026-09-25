@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// Rules Firebase Storage.
+// - /produk/: gambar katalog. Baca publik, tulis hanya admin, maks 2 MB.
+// - /desain/: file desain custom customer per order. Baca hanya user login,
+//   tulis customer pada order miliknya yang masih menunggu + admin, maks 10 MB.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() { return request.auth != null; }
+    function roleSaya() {
+      return signedIn()
+        && exists(/databases/(default)/documents/users/$(request.auth.uid))
+        ? get(/databases/(default)/documents/users/$(request.auth.uid)).data.role
+        : null;
+    }
+    function isAdmin() { return roleSaya() == 'admin'; }
+    function orderMilikCustomer(orderId) {
+      return roleSaya() == 'customer'
+        && exists(/databases/(default)/documents/orders/$(orderId))
+        && exists(/databases/(default)/documents/pelanggan/$(get(/databases/(default)/documents/orders/$(orderId)).data.id_pelanggan))
+        && get(/databases/(default)/documents/pelanggan/$(get(/databases/(default)/documents/orders/$(orderId)).data.id_pelanggan)).data.uid == request.auth.uid;
+    }
+    function orderMenunggu(orderId) {
+      return exists(/databases/(default)/documents/orders/$(orderId))
+        && get(/databases/(default)/documents/orders/$(orderId)).data.status_order == 'menunggu';
+    }
+
+    match /produk/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /desain/{orderId}/{fileName} {
+      allow read: if signedIn();
+      allow create: if isAdmin()
+        || (orderMilikCustomer(orderId)
+            && orderMenunggu(orderId)
+            && request.resource.size < 10 * 1024 * 1024
+            && (request.resource.contentType.matches('image/.*')
+                || request.resource.contentType == 'application/pdf'));
+      allow update: if isAdmin();
+      allow delete: if isAdmin()
+        || (orderMilikCustomer(orderId) && orderMenunggu(orderId));
+    }
+  }
+}
