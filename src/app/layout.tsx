@@ -25,8 +25,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col bg-white text-moon-ink">
+      <body className="flex min-h-full flex-col bg-white text-moon-ink" suppressHydrationWarning>
         <AuthProvider>
           <Navbar />
           {children}

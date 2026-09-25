@@ -48,49 +48,91 @@ export default function RegisterPage() {
           <BrandMark className="h-11 w-11" />
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-moon-pink">
-              Akun customer
+              Pendaftaran
             </p>
             <h1 className="text-2xl font-semibold text-moon-ink">
-              Daftar sebagai Customer
+              Buat Akun Baru
             </h1>
           </div>
         </div>
-        <p className="mt-1 text-sm text-zinc-500">
-          Data ini masuk ke collection <code>pelanggan</code> +{" "}
-          <code>users (role=customer)</code>.
+        <p className="mt-2 text-sm text-zinc-500">
+          Daftar untuk mulai menghitung estimasi biaya dan memesan cetakan custom Anda.
         </p>
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">
-          {(
-            [
-              ["nama", "Nama lengkap", "text"],
-              ["email", "Email", "email"],
-              ["password", "Password (min. 6 karakter)", "password"],
-              ["no_hp", "No. HP", "tel"],
-              ["alamat", "Alamat", "text"],
-            ] as const
-          ).map(([key, label, type]) => (
-            <label key={key} className="text-sm font-medium">
-              {label}
-              <input
-                type={type}
-                required
-                minLength={key === "password" ? 6 : undefined}
-                value={form[key]}
-                onChange={(e) => set(key, e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 font-normal"
-              />
-            </label>
-          ))}
+        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" suppressHydrationWarning>
+          <label className="text-sm font-medium text-moon-ink">
+            Nama lengkap
+            <input
+              type="text"
+              required
+              value={form.nama}
+              onChange={(e) => set("nama", e.target.value)}
+              placeholder="Masukkan nama lengkap Anda"
+              className="mt-1 w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400 focus:border-moon-blue focus:outline-none focus:ring-2 focus:ring-moon-blue/20 transition-all"
+              suppressHydrationWarning
+            />
+          </label>
+          <label className="text-sm font-medium text-moon-ink">
+            Email
+            <input
+              type="email"
+              required
+              value={form.email}
+              onChange={(e) => set("email", e.target.value)}
+              placeholder="nama@email.com"
+              className="mt-1 w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400 focus:border-moon-blue focus:outline-none focus:ring-2 focus:ring-moon-blue/20 transition-all"
+              suppressHydrationWarning
+            />
+          </label>
+          <label className="text-sm font-medium text-moon-ink">
+            No. HP (WhatsApp)
+            <input
+              type="tel"
+              required
+              value={form.no_hp}
+              onChange={(e) => set("no_hp", e.target.value)}
+              placeholder="08xxxxxxxxxx"
+              className="mt-1 w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400 focus:border-moon-blue focus:outline-none focus:ring-2 focus:ring-moon-blue/20 transition-all"
+              suppressHydrationWarning
+            />
+          </label>
+          <label className="text-sm font-medium text-moon-ink">
+            Alamat pengiriman
+            <textarea
+              required
+              rows={3}
+              value={form.alamat}
+              onChange={(e) => set("alamat", e.target.value)}
+              placeholder="Alamat lengkap untuk pengiriman barang"
+              className="mt-1 w-full resize-none rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400 focus:border-moon-blue focus:outline-none focus:ring-2 focus:ring-moon-blue/20 transition-all"
+              suppressHydrationWarning
+            />
+          </label>
+          <label className="text-sm font-medium text-moon-ink">
+            Password
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={form.password}
+              onChange={(e) => set("password", e.target.value)}
+              placeholder="Minimal 6 karakter"
+              className="mt-1 w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400 focus:border-moon-blue focus:outline-none focus:ring-2 focus:ring-moon-blue/20 transition-all"
+              suppressHydrationWarning
+            />
+          </label>
+
           {msg && <ErrorBox>{msg}</ErrorBox>}
-          <PrimaryButton disabled={busy}>
-            {busy ? "Mendaftar…" : "Buat akun customer"}
-          </PrimaryButton>
+          <div className="pt-2">
+            <PrimaryButton disabled={busy} className="w-full">
+              {busy ? "Memproses..." : "Daftar Sekarang"}
+            </PrimaryButton>
+          </div>
         </form>
       </Card>
-      <p className="mt-4 text-center text-sm text-zinc-500">
+      <p className="mt-6 text-center text-sm text-zinc-500">
         Sudah punya akun?{" "}
         <Link href="/login" className="font-medium text-moon-blue hover:underline">
-          Masuk
+          Masuk di sini
         </Link>
       </p>
     </main>

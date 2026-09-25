@@ -1,39 +1,7 @@
 import Link from "next/link";
-import { Badge, BrandMark } from "@/components/ui";
+import { BrandMark } from "@/components/ui";
 import { KatalogPreview } from "@/components/KatalogPreview";
-import {
-  LayoutDashboard,
-  Shield,
-  User,
-  ArrowRight,
-} from "lucide-react";
-
-const ROLE_CARDS = [
-  {
-    role: "admin",
-    tone: "yellow" as const,
-    icon: Shield,
-    desc: "Kelola order, produksi, tracking, dan estimasi. Full write access.",
-    href: "/admin",
-    gradient: "from-moon-yellow/20 via-moon-yellow/5 to-transparent",
-  },
-  {
-    role: "owner",
-    tone: "blue" as const,
-    icon: LayoutDashboard,
-    desc: "Pantau omzet & produksi. Read-only analytics.",
-    href: "/owner",
-    gradient: "from-moon-blue/20 via-moon-blue/5 to-transparent",
-  },
-  {
-    role: "customer",
-    tone: "pink" as const,
-    icon: User,
-    desc: "Hitung estimasi & lacak produksimu sendiri.",
-    href: "/customer",
-    gradient: "from-moon-pink/20 via-moon-pink/5 to-transparent",
-  },
-] as const;
+import { ArrowRight } from "lucide-react";
 
 export default function Home() {
   return (
@@ -76,37 +44,7 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        {ROLE_CARDS.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link
-              key={c.role}
-              href={c.href}
-              className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-200/60 hover:border-zinc-300"
-            >
-              <div className={`absolute inset-0 bg-gradient-to-b ${c.gradient} opacity-0 transition-opacity group-hover:opacity-100`} />
-              <div className="relative">
-                <div className="flex items-center justify-between">
-                  <Badge tone={c.tone} className="shadow-sm">
-                    {c.role}
-                  </Badge>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 transition-colors group-hover:bg-moon-yellow/20 group-hover:text-moon-ink">
-                    <Icon className="h-5 w-5" strokeWidth={2} />
-                  </div>
-                </div>
-                <p className="mt-4 text-sm leading-relaxed text-zinc-600">
-                  {c.desc}
-                </p>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-moon-blue transition-colors group-hover:text-moon-pink">
-                  Buka dashboard
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                </span>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+
 
       <KatalogPreview />
     </main>

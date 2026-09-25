@@ -64,42 +64,46 @@ export default function LoginPage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-moon-blue">
               Moon Indie Store
             </p>
-            <h1 className="text-2xl font-semibold text-moon-ink">Masuk</h1>
+            <h1 className="text-2xl font-semibold text-moon-ink">Masuk Akun</h1>
           </div>
         </div>
-        <p className="mt-1 text-sm text-zinc-500">
-         Selamat datang.
+        <p className="mt-2 text-sm text-zinc-500">
+          Selamat datang kembali. Silakan masuk untuk melanjutkan.
         </p>
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">
-          <label className="text-sm font-medium">
+        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" suppressHydrationWarning>
+          <label className="text-sm font-medium text-moon-ink">
             Email
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 font-normal"
+              className="mt-1 w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400 focus:border-moon-blue focus:outline-none focus:ring-2 focus:ring-moon-blue/20 transition-all"
               placeholder="nama@email.com"
+              suppressHydrationWarning
             />
           </label>
-          <label className="text-sm font-medium">
+          <label className="text-sm font-medium text-moon-ink">
             Password
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 font-normal"
+              className="mt-1 w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400 focus:border-moon-blue focus:outline-none focus:ring-2 focus:ring-moon-blue/20 transition-all"
               placeholder="••••••••"
+              suppressHydrationWarning
             />
           </label>
           {msg && <ErrorBox>{msg}</ErrorBox>}
-          <PrimaryButton disabled={busy}>
-            {busy ? "Memproses…" : "Masuk"}
-          </PrimaryButton>
+          <div className="pt-2">
+            <PrimaryButton disabled={busy} className="w-full">
+              {busy ? "Memproses…" : "Masuk Sekarang"}
+            </PrimaryButton>
+          </div>
         </form>
       </Card>
-      <p className="mt-4 text-center text-sm text-zinc-500">
+      <p className="mt-6 text-center text-sm text-zinc-500">
         Belum punya akun customer?{" "}
         <Link href="/register" className="font-medium text-moon-blue hover:underline">
           Daftar di sini
