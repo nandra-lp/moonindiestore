@@ -31,7 +31,7 @@ export function EstimasiBiayaCard({
       {estimasi ? (
         <div className="mt-2 text-sm">
           <div className="flex justify-between gap-2 py-1">
-            <span>
+            <span className="min-w-0 break-words">
               {nama(estimasi.id_produk)} × {estimasi.jumlah} @{" "}
               {formatRupiah(estimasi.harga_satuan)}
             </span>
@@ -86,7 +86,7 @@ export function EstimasiBiayaCard({
             <>
               {detail.map((d) => (
                 <div key={d.id} className="flex justify-between gap-2 py-1">
-                  <span>
+                  <span className="min-w-0 break-words">
                     {nama(d.id_produk)} × {d.jumlah} @{" "}
                     {formatRupiah(d.harga_satuan)}
                   </span>
@@ -130,7 +130,7 @@ export function OrderItemsCard({
         {detail.map((d) => (
           <li key={d.id} className="py-3">
             <div className="flex justify-between gap-2">
-              <span>
+              <span className="min-w-0 break-words">
                 {nama(d.id_produk)} × {d.jumlah}
                 {d.spesifikasi && (
                   <span className="block text-xs text-zinc-500">

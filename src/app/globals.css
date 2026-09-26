@@ -19,6 +19,18 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  /* Jaring pengaman: konten tak terduga tidak boleh menggeser layout mobile. */
+  overflow-x: clip;
+}
+
+/* Cegah auto-zoom iOS Safari saat fokus input (terjadi bila font < 16px).
+   Hanya berlaku di layar kecil agar estetika desktop tidak berubah. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 ::selection {

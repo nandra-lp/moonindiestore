@@ -6,7 +6,7 @@ import { RequireRole } from "@/components/AuthGuard";
 import { EstimasiForm } from "@/components/EstimasiForm";
 import { useAuth } from "@/context/AuthContext";
 import { listEstimasiByPelanggan, listProduk, type WithDocId } from "@/lib/db";
-import { formatRupiah } from "@/lib/estimasi";
+import { formatRupiah, formatTanggal } from "@/lib/estimasi";
 import type { PerkiraanHarga, Produk } from "@/types/firestore";
 import { BackLink, Card, PageHeader, ProductThumb } from "@/components/ui";
 
@@ -99,11 +99,7 @@ function EstimasiInner() {
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-zinc-500">
-                  {e.tanggal?.toDate().toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
+                  {formatTanggal(e.tanggal)}
                 </span>
                 <span className="rounded-full bg-moon-blue/10 px-2 py-0.5 text-xs font-semibold text-moon-blue">
                   {e.id_produk.slice(0, 8)}

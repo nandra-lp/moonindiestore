@@ -53,7 +53,7 @@ function Logo() {
       <span className="transition-transform group-hover:scale-105">
         <BrandMark className="h-9 w-9" />
       </span>
-      <span className="text-[17px] font-extrabold tracking-tight text-moon-ink">
+      <span className="hidden text-[17px] font-extrabold tracking-tight text-moon-ink min-[400px]:inline">
         MoonIndie <span className="font-light">Store</span>
       </span>
     </Link>
@@ -147,7 +147,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           {loading ? (
-            <div className="h-9 w-44 animate-pulse rounded-full bg-zinc-200/70" />
+            <div className="h-9 w-24 animate-pulse rounded-full bg-zinc-200/70 sm:w-44" />
           ) : !firebaseUser ? (
             <>
               <Link

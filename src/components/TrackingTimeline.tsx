@@ -27,7 +27,9 @@ export function ProduksiProgress({
   produksi: WithDocId<Produksi>[];
   order?: WithDocId<Order>;
 }) {
-  let { persen, tahapTerakhir } = hitungProgresProduksi(produksi);
+  const progres = hitungProgresProduksi(produksi);
+  let persen = progres.persen;
+  const tahapTerakhir = progres.tahapTerakhir;
   const status = order?.status_order;
   
   if (status === "selesai") {

@@ -113,7 +113,7 @@ export function Stat({
           </span>
         )}
       </div>
-      <p className="mt-2 text-3xl font-bold tracking-tight text-moon-ink">{value}</p>
+      <p className="mt-2 break-words text-2xl font-bold tracking-tight text-moon-ink sm:text-3xl">{value}</p>
     </div>
   );
 }

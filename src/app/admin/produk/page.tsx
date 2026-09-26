@@ -281,14 +281,14 @@ function ProdukInner() {
               <GhostButton
                 disabled={busy}
                 onClick={() => openEdit(p)}
-                className="!px-3"
+                className="!px-3 shrink-0"
               >
                 Ubah
               </GhostButton>
               <DangerButton
                 disabled={busy}
                 onClick={() => onDelete(p)}
-                className="!px-3"
+                className="!px-3 shrink-0"
               >
                 Hapus
               </DangerButton>

@@ -91,7 +91,7 @@ function AdminInner() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
               filter === f
                 ? "border-moon-ink bg-moon-ink text-moon-yellow"
                 : "border-zinc-300 hover:border-moon-blue hover:text-moon-blue"

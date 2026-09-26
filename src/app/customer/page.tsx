@@ -83,11 +83,11 @@ function CustomerInner() {
         className="group relative mt-6 flex items-center justify-between gap-4 overflow-hidden rounded-2xl bg-moon-ink p-5 text-white transition hover:brightness-110 sm:p-6"
       >
         <span className="absolute -right-10 -top-14 h-40 w-40 rounded-full bg-moon-yellow/20 transition-transform duration-300 group-hover:scale-125" />
-        <span className="relative flex items-center gap-4">
+        <span className="relative flex min-w-0 items-center gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-moon-yellow text-moon-ink">
             <PackagePlus className="h-6 w-6" strokeWidth={2} />
           </span>
-          <span>
+          <span className="min-w-0">
             <span className="block font-semibold">Buat pesanan baru</span>
             <span className="block text-sm text-white/70">
               Pilih produk, lampirkan desain custom — langsung tercatat sebagai
