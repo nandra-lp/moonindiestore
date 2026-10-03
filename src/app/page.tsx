@@ -38,13 +38,11 @@ export default function Home() {
               href="/login"
               className="rounded-full border border-white/30 px-6 py-2.5 text-sm font-medium text-white transition hover:border-moon-yellow hover:text-moon-yellow hover:bg-white/5"
             >
-              Masuk (semua role)
+              Masuk
             </Link>
           </div>
         </div>
       </section>
-
-
 
       <KatalogPreview />
     </main>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 import { RequireRole } from "@/components/AuthGuard";
+import { AlertCircle } from "lucide-react";
 import {
   ProduksiProgress,
   TrackingTimeline,
@@ -64,12 +65,13 @@ function AdminDetailInner() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const namaPelanggan = usePelangganMap();
   const namaProduk = useProdukMap();
 
   function pesanError(err: unknown, konteks: string) {
     setMsg(
-      `${konteks}: ${err instanceof Error ? err.message : "Terjadi kesalahan."}`
+      `${konteks}: ${err instanceof Error ? err.message : "Terjadi kesalahan."}`,
     );
   }
 
@@ -160,15 +162,8 @@ function AdminDetailInner() {
     }
   }
 
-  async function hapusOrder() {
+  async function executeHapusOrder() {
     if (!order || busy) return;
-    if (
-      !confirm(
-        `Hapus order #${order.id.slice(0, 8)} beserta ${detail.length} item, ${produksi.length} data produksi, ${tracking.length} tracking, dan file desainnya? Tindakan ini tidak bisa dibatalkan.`
-      )
-    ) {
-      return;
-    }
     setBusy(true);
     setMsg(null);
     try {
@@ -184,23 +179,25 @@ function AdminDetailInner() {
       router.push("/admin");
     } catch (err) {
       pesanError(err, "Gagal menghapus order");
-    } finally {
       setBusy(false);
+      setShowDeleteModal(false);
     }
   }
 
   // Data produksi yang tahapnya sudah tidak ada di TAHAP_PRODUKSI
   // (mis. "perakitan" yang sudah dihapus) — tidak tampil di progres.
   const tahapUsang = produksi.filter(
-    (p) => !(TAHAP_PRODUKSI as readonly string[]).includes(p.tahap_produksi)
+    (p) => !(TAHAP_PRODUKSI as readonly string[]).includes(p.tahap_produksi),
   );
 
   async function bersihkanTahapUsang() {
     if (busy || tahapUsang.length === 0) return;
-    const namaTahap = [...new Set(tahapUsang.map((p) => p.tahap_produksi))].join(", ");
+    const namaTahap = [
+      ...new Set(tahapUsang.map((p) => p.tahap_produksi)),
+    ].join(", ");
     if (
       !confirm(
-        `Hapus ${tahapUsang.length} data produksi dengan tahap usang (${namaTahap})? Tindakan ini tidak bisa dibatalkan.`
+        `Hapus ${tahapUsang.length} data produksi dengan tahap usang (${namaTahap})? Tindakan ini tidak bisa dibatalkan.`,
       )
     ) {
       return;
@@ -209,7 +206,7 @@ function AdminDetailInner() {
     setMsg(null);
     try {
       await Promise.allSettled(
-        tahapUsang.map((p) => deleteDocById(COLLECTIONS.produksi, p.id))
+        tahapUsang.map((p) => deleteDocById(COLLECTIONS.produksi, p.id)),
       );
       await reload();
     } catch (err) {
@@ -242,11 +239,11 @@ function AdminDetailInner() {
     <main className="mx-auto w-full max-w-3xl flex-1 space-y-4 px-6 py-10">
       <BackLink href="/admin">Dashboard admin</BackLink>
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-semibold text-moon-ink">
+        <h1 className="text-2xl font-semibold text-moon-ink cursor-pointer">
           Kelola order <code>{order.id.slice(0, 8)}…</code>
         </h1>
         <Badge tone={orderTone(order.status_order)}>{order.status_order}</Badge>
-        <DangerButton disabled={busy} onClick={hapusOrder}>
+        <DangerButton disabled={busy} onClick={() => setShowDeleteModal(true)}>
           Hapus order
         </DangerButton>
       </div>
@@ -265,24 +262,24 @@ function AdminDetailInner() {
             <button
               key={s}
               disabled={busy || order.status_order === s}
-                onClick={async () => {
-                  setBusy(true);
-                  setMsg(null);
-                  try {
-                    await updateOrderStatus(order.id, s);
-                    await addTracking({
-                      id_order: order.id,
-                      status: `Status order → ${s}`,
-                      waktu: Timestamp.now(),
-                      keterangan: "",
-                    });
-                    await reload();
-                  } catch (err) {
-                    pesanError(err, "Gagal mengubah status");
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
+              onClick={async () => {
+                setBusy(true);
+                setMsg(null);
+                try {
+                  await updateOrderStatus(order.id, s);
+                  await addTracking({
+                    id_order: order.id,
+                    status: `Status order → ${s}`,
+                    waktu: Timestamp.now(),
+                    keterangan: "",
+                  });
+                  await reload();
+                } catch (err) {
+                  pesanError(err, "Gagal mengubah status");
+                } finally {
+                  setBusy(false);
+                }
+              }}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-40 ${
                 order.status_order === s
                   ? "border-moon-ink bg-moon-ink text-moon-yellow"
@@ -312,7 +309,8 @@ function AdminDetailInner() {
               >
                 <div className="flex justify-between gap-2">
                   <span className="font-medium text-moon-ink">
-                    {namaProduk[d.id_produk] ?? `${d.id_produk.slice(0, 8)}…`} × {d.jumlah}
+                    {namaProduk[d.id_produk] ?? `${d.id_produk.slice(0, 8)}…`} ×{" "}
+                    {d.jumlah}
                   </span>
                   <span>{formatRupiah(d.subtotal)}</span>
                 </div>
@@ -385,7 +383,10 @@ function AdminDetailInner() {
           </label>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <GhostButton disabled={busy} onClick={() => tambahProduksi("berjalan")}>
+          <GhostButton
+            disabled={busy}
+            onClick={() => tambahProduksi("berjalan")}
+          >
             Tandai berjalan
           </GhostButton>
           <PrimaryButton
@@ -418,6 +419,66 @@ function AdminDetailInner() {
       </Card>
 
       <TrackingTimeline order={order} tracking={tracking} />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+            onClick={() => !busy && setShowDeleteModal(false)}
+          />
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 text-left shadow-xl transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-moon-pink/10 sm:h-10 sm:w-10">
+                <AlertCircle
+                  className="h-6 w-6 text-moon-pink"
+                  strokeWidth={2}
+                />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold leading-6 text-moon-ink">
+                  Hapus Order?
+                </h3>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <p className="text-sm text-zinc-600">
+                Apakah Anda yakin ingin menghapus order{" "}
+                <strong className="text-moon-ink">
+                  #{order.id.slice(0, 8)}
+                </strong>{" "}
+                beserta{" "}
+                <strong className="text-moon-ink">{detail.length}</strong> item,{" "}
+                <strong className="text-moon-ink">{produksi.length}</strong>{" "}
+                data produksi,{" "}
+                <strong className="text-moon-ink">{tracking.length}</strong>{" "}
+                tracking, dan file desainnya?
+              </p>
+              <p className="mt-2 text-sm font-medium text-moon-pink">
+                Tindakan ini tidak bisa dibatalkan.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <GhostButton
+                disabled={busy}
+                onClick={() => setShowDeleteModal(false)}
+                className="w-full sm:w-auto"
+              >
+                Batal
+              </GhostButton>
+              <DangerButton
+                disabled={busy}
+                onClick={executeHapusOrder}
+                className="w-full sm:w-auto"
+              >
+                {busy ? "Menghapus..." : "Ya, Hapus Order"}
+              </DangerButton>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

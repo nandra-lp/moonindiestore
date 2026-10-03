@@ -41,7 +41,7 @@ export default function LoginPage() {
       const target = resolveTarget(role);
       if (!target) {
         setMsg(
-          `Login berhasil, tetapi role "${String(role)}" tidak dikenal. Minta admin memperbaiki field role di dokumen users Firestore menjadi salah satu: admin, owner, customer (huruf kecil semua, tanpa spasi).`
+          `Login berhasil, tetapi role "${String(role)}" tidak dikenal. Minta admin memperbaiki field role di dokumen users Firestore menjadi salah satu: admin, owner, customer (huruf kecil semua, tanpa spasi).`,
         );
         return;
       }
@@ -62,7 +62,7 @@ export default function LoginPage() {
           <BrandMark className="h-11 w-11" />
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-moon-blue">
-              Moon Indie Store
+              MoonIndie Store
             </p>
             <h1 className="text-2xl font-semibold text-moon-ink">Masuk Akun</h1>
           </div>
@@ -70,7 +70,11 @@ export default function LoginPage() {
         <p className="mt-2 text-sm text-zinc-500">
           Selamat datang kembali. Silakan masuk untuk melanjutkan.
         </p>
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" suppressHydrationWarning>
+        <form
+          onSubmit={onSubmit}
+          className="mt-6 flex flex-col gap-4"
+          suppressHydrationWarning
+        >
           <label className="text-sm font-medium text-moon-ink">
             Email
             <input
@@ -105,7 +109,10 @@ export default function LoginPage() {
       </Card>
       <p className="mt-6 text-center text-sm text-zinc-500">
         Belum punya akun customer?{" "}
-        <Link href="/register" className="font-medium text-moon-blue hover:underline">
+        <Link
+          href="/register"
+          className="font-medium text-moon-blue hover:underline"
+        >
           Daftar di sini
         </Link>
       </p>

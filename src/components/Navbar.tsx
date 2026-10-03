@@ -105,12 +105,18 @@ export function Navbar() {
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
-  const items = role ? ROLE_ITEMS[role] : GUEST_ITEMS;
+  const items = (role && ROLE_ITEMS[role]) ? ROLE_ITEMS[role] : GUEST_ITEMS;
 
   function closeMenus() {
     setMobileOpen(false);
     setMenuOpen(false);
   }
+
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname?.startsWith(`${href}/`);
+  };
+
   const displayName =
     profile?.nama ?? firebaseUser?.displayName ?? firebaseUser?.email ?? "Akun";
   const initial = displayName.trim().charAt(0).toUpperCase() || "?";
@@ -136,11 +142,7 @@ export function Navbar() {
               label={it.label}
               icon={it.icon}
               onNavigate={closeMenus}
-              active={
-                it.href === "/"
-                  ? pathname === "/"
-                  : pathname === it.href || pathname.startsWith(`${it.href}/`)
-              }
+              active={isActive(it.href)}
             />
           ))}
         </nav>
@@ -216,15 +218,17 @@ export function Navbar() {
                       </p>
                     </div>
                     <div className="p-1.5">
-                      <button
-                        onClick={() => {
-                          if (role) router.push(routeForRole(role));
-                          setMenuOpen(false);
-                        }}
-                        className="w-full rounded-xl px-3 py-2 text-left text-sm text-zinc-700 transition hover:bg-moon-yellow/20"
-                      >
-                        Dashboard saya
-                      </button>
+                      {role && (
+                        <button
+                          onClick={() => {
+                            router.push(routeForRole(role));
+                            setMenuOpen(false);
+                          }}
+                          className="w-full rounded-xl px-3 py-2 text-left text-sm text-zinc-700 transition hover:bg-moon-yellow/20"
+                        >
+                          Dashboard saya
+                        </button>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-moon-pink transition hover:bg-moon-pink/10"
@@ -277,7 +281,7 @@ export function Navbar() {
                 href={it.href}
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors ${
-                  pathname === it.href
+                  isActive(it.href)
                     ? "bg-moon-yellow/25 text-moon-ink"
                     : "text-zinc-600 hover:bg-zinc-50 hover:text-moon-ink"
                 }`}
@@ -287,15 +291,24 @@ export function Navbar() {
               </Link>
             );
           })}
-          <div className="mt-2 border-t border-zinc-100 pt-3">
+          <div className="mt-2 border-t border-zinc-100 pt-3 flex flex-col gap-1">
             {!firebaseUser && !loading ? (
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="block rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600"
-              >
-                Masuk
-              </Link>
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50"
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="block rounded-xl bg-moon-ink px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-zinc-800"
+                >
+                  Daftar Customer
+                </Link>
+              </>
             ) : (
               firebaseUser && (
                 <div className="flex items-center gap-2.5 px-3 py-2">

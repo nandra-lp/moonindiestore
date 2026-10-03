@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RequireRole } from "@/components/AuthGuard";
+import { AlertCircle } from "lucide-react";
 import {
   createProduk,
   deleteProduk,
@@ -50,6 +51,7 @@ function ProdukInner() {
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [productToDelete, setProductToDelete] = useState<WithDocId<Produk> | null>(null);
 
   function reload() {
     listProduk().then(setRows).catch(() => {});
@@ -134,17 +136,18 @@ function ProdukInner() {
     }
   }
 
-  async function onDelete(p: WithDocId<Produk>) {
-    if (!confirm(`Hapus "${p.nama_produk}" beserta gambarnya?`)) return;
+  async function executeDelete() {
+    if (!productToDelete) return;
     setBusy(true);
     try {
-      await hapusGambarProduk(p.gambar_path).catch(() => {});
-      await deleteProduk(p.id);
+      await hapusGambarProduk(productToDelete.gambar_path).catch(() => {});
+      await deleteProduk(productToDelete.id);
       reload();
     } catch (err) {
       setMsg(err instanceof Error ? err.message : "Gagal menghapus produk.");
     } finally {
       setBusy(false);
+      setProductToDelete(null);
     }
   }
 
@@ -258,45 +261,103 @@ function ProdukInner() {
         </Card>
       )}
 
-      <Card className="mt-6 !p-0">
-        <ul className="divide-y">
+      <Card className="mt-6 overflow-hidden !p-0">
+        <ul className="divide-y divide-zinc-100">
           {rows.map((p) => (
             <li
               key={p.id}
-              className="flex items-center gap-3 px-4 py-3 text-sm"
+              className="flex flex-col sm:flex-row sm:items-center gap-4 px-5 py-4 transition-colors hover:bg-zinc-50/80"
             >
-              <ProductThumb
-                url={p.gambar_url}
-                nama={p.nama_produk}
-                size="md"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-moon-ink">
-                  {p.nama_produk}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {p.jenis_produk} · {formatRupiah(p.harga_dasar)}/{p.satuan}
-                </p>
+              <div className="flex flex-1 items-center gap-4 min-w-0">
+                <ProductThumb
+                  url={p.gambar_url}
+                  nama={p.nama_produk}
+                  size="md"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold text-moon-ink">
+                    {p.nama_produk}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
+                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+                      {p.jenis_produk}
+                    </span>
+                    <span>
+                      {formatRupiah(p.harga_dasar)}
+                      <span className="text-zinc-400">/{p.satuan}</span>
+                    </span>
+                  </div>
+                </div>
               </div>
-              <GhostButton
-                disabled={busy}
-                onClick={() => openEdit(p)}
-                className="!px-3 shrink-0"
-              >
-                Ubah
-              </GhostButton>
-              <DangerButton
-                disabled={busy}
-                onClick={() => onDelete(p)}
-                className="!px-3 shrink-0"
-              >
-                Hapus
-              </DangerButton>
+              <div className="flex items-center gap-2 sm:shrink-0 mt-2 sm:mt-0">
+                <GhostButton
+                  disabled={busy}
+                  onClick={() => openEdit(p)}
+                  className="flex-1 sm:flex-none justify-center !px-4"
+                >
+                  Ubah
+                </GhostButton>
+                <DangerButton
+                  disabled={busy}
+                  onClick={() => setProductToDelete(p)}
+                  className="flex-1 sm:flex-none justify-center !px-4"
+                >
+                  Hapus
+                </DangerButton>
+              </div>
             </li>
           ))}
           {rows.length === 0 && <EmptyRow>Belum ada produk.</EmptyRow>}
         </ul>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+          <div 
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+            onClick={() => !busy && setProductToDelete(null)}
+          />
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 text-left shadow-xl transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-moon-pink/10 sm:h-10 sm:w-10">
+                <AlertCircle className="h-6 w-6 text-moon-pink" strokeWidth={2} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold leading-6 text-moon-ink">
+                  Hapus Produk?
+                </h3>
+              </div>
+            </div>
+            
+            <div className="mt-3">
+              <p className="text-sm text-zinc-600">
+                Apakah Anda yakin ingin menghapus produk <strong className="text-moon-ink">&quot;{productToDelete.nama_produk}&quot;</strong> beserta gambarnya?
+              </p>
+              <p className="mt-2 text-sm font-medium text-moon-pink">
+                Tindakan ini tidak bisa dibatalkan.
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <GhostButton 
+                disabled={busy} 
+                onClick={() => setProductToDelete(null)}
+                className="w-full sm:w-auto"
+              >
+                Batal
+              </GhostButton>
+              <DangerButton 
+                disabled={busy} 
+                onClick={executeDelete}
+                className="w-full sm:w-auto"
+              >
+                {busy ? "Menghapus..." : "Ya, Hapus Produk"}
+              </DangerButton>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
