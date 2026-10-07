@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 import { RequireRole } from "@/components/AuthGuard";
+import { DashboardShell } from "@/components/dashboard/Shell";
 import { useAuth } from "@/context/AuthContext";
 import {
   generateOrderId,
@@ -222,7 +223,7 @@ function PesanInner() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+    <DashboardShell role="customer" title="Pesanan Baru" contain="3xl">
       <BackLink href="/customer">Kembali</BackLink>
       <div className="mt-2">
         <PageHeader
@@ -384,7 +385,7 @@ function PesanInner() {
           </form>
         </Card>
       )}
-    </main>
+    </DashboardShell>
   );
 }
 

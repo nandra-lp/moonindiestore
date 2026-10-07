@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RequireRole } from "@/components/AuthGuard";
+import { DashboardShell } from "@/components/dashboard/Shell";
 import { AlertTriangle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -15,6 +16,7 @@ import {
   BackLink,
   Badge,
   Card,
+  DangerButton,
   EmptyRow,
   ErrorBox,
   GhostButton,
@@ -69,7 +71,7 @@ function PelangganInner() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
+    <DashboardShell role="admin" title="Pengguna" contain="4xl">
       <BackLink href="/admin">Dashboard admin</BackLink>
       <div className="mt-2">
         <PageHeader
@@ -245,7 +247,7 @@ function PelangganInner() {
           </div>
         </div>
       )}
-    </main>
+    </DashboardShell>
   );
 }
 

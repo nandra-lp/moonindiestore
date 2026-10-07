@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
-import { Navbar } from "@/components/Navbar";
+import { Chrome } from "@/components/Chrome";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,11 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-white text-moon-ink" suppressHydrationWarning>
         <AuthProvider>
-          <Navbar />
-          {children}
-          <footer className="mt-auto bg-moon-ink py-4 text-center text-xs text-white/60">
-            Moon Indie Store • Printing
-          </footer>
+          <Chrome>{children}</Chrome>
         </AuthProvider>
       </body>
     </html>

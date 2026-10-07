@@ -55,3 +55,11 @@ service-account.json
 serviceAccount.json
 *-adminsdk-*.json
 firebase-key.json
+*service-account*.json
+
+# firebase local & debug (bukan rahasia, tapi sampah lokal — jangan push)
+.firebase/
+firebase-debug.log
+firestore-debug.log
+database-debug.log
+ui-debug.log

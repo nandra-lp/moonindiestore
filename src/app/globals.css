@@ -7,6 +7,53 @@
   --color-moon-pink: #ff006e;
   --color-moon-ink: #0a0a0a;
   --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+
+  /* Animasi mikro untuk dropdown & panel navigasi (pendek & purposeful). */
+  --animate-slide-down: slide-down 0.22s ease-out;
+  --animate-slide-in-left: slide-in-left 0.22s ease-out;
+  --animate-pop-in: pop-in 0.16s ease-out;
+
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+/* Hormati preferensi reduced-motion: matikan animasi mikro navigasi. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-down,
+  .animate-slide-in-left,
+  .animate-pop-in {
+    animation: none;
+  }
 }
 
 /* Light-first agar palet brand selalu konsisten di semua perangkat. */

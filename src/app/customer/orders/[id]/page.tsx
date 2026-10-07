@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { RequireRole } from "@/components/AuthGuard";
+import { DashboardShell } from "@/components/dashboard/Shell";
 import {
   ProduksiProgress,
   TrackingTimeline,
@@ -114,25 +115,25 @@ function DetailInner() {
 
   if (denied) {
     return (
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+      <DashboardShell role="customer" title="Detail Pesanan" contain="3xl">
         <ErrorBox>Order ini bukan milik akunmu.</ErrorBox>
         <div className="mt-4">
           <BackLink href="/customer/orders">Kembali ke pesanan saya</BackLink>
         </div>
-      </main>
+      </DashboardShell>
     );
   }
 
   if (!order) {
     return (
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+      <DashboardShell role="customer" title="Detail Pesanan" contain="3xl">
         <p className="text-sm text-zinc-500">Memuat detail order…</p>
-      </main>
+      </DashboardShell>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 space-y-4 px-6 py-10">
+    <DashboardShell role="customer" title="Detail Pesanan" contain="3xl" className="space-y-4">
       <BackLink href="/customer/orders">Semua pesanan</BackLink>
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-semibold text-moon-ink">
@@ -160,7 +161,7 @@ function DetailInner() {
       <TrackingTimeline order={order} tracking={tracking} />
 
       <OrderItemsCard detail={detail} namaProduk={namaProduk} />
-    </main>
+    </DashboardShell>
   );
 }
 

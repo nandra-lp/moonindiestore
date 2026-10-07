@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { RequireRole } from "@/components/AuthGuard";
+import { DashboardShell } from "@/components/dashboard/Shell";
 import {
   ProduksiProgress,
   TrackingTimeline,
@@ -68,14 +69,14 @@ function OwnerDetailInner() {
 
   if (!order) {
     return (
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+      <DashboardShell role="owner" title="Detail Order" contain="3xl">
         <p className="text-sm text-zinc-500">Memuat detail order…</p>
-      </main>
+      </DashboardShell>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 space-y-4 px-6 py-10">
+    <DashboardShell role="owner" title="Detail Order" contain="3xl" className="space-y-4">
       <BackLink href="/owner">Dashboard owner</BackLink>
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-semibold text-moon-ink">
@@ -99,7 +100,7 @@ function OwnerDetailInner() {
       <ProduksiProgress order={order} produksi={produksi} />
       <TrackingTimeline order={order} tracking={tracking} />
       <OrderItemsCard detail={detail} namaProduk={namaProduk} />
-    </main>
+    </DashboardShell>
   );
 }
 

@@ -13,7 +13,7 @@ export default function Home() {
         <span className="absolute -left-10 bottom-6 h-20 w-20 rounded-full bg-moon-yellow/40 blur-xl" />
         <div className="relative">
           <div className="flex items-center gap-2.5">
-            <BrandMark className="h-9 w-9 shrink-0" plain />
+            <BrandMark className="h-11 w-11 shrink-0" plain />
             <p className="text-xs font-semibold uppercase tracking-widest text-moon-yellow">
               Sistem Pemesanan & Produksi
             </p>

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { RequireRole } from "@/components/AuthGuard";
+import { DashboardShell } from "@/components/dashboard/Shell";
+import { DashboardHero, SectionHead } from "@/components/dashboard/widgets";
 import {
   ArrowRight,
   Calculator,
@@ -17,7 +19,10 @@ import {
 } from "@/lib/db";
 import { formatRupiah, formatTanggal } from "@/lib/estimasi";
 import type { Order, PerkiraanHarga } from "@/types/firestore";
-import { Badge, EmptyRow, PageHeader, orderTone } from "@/components/ui";
+import { Badge, EmptyRow, orderTone } from "@/components/ui";
+
+const textLinkClass =
+  "rounded-sm font-medium text-moon-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue";
 
 function CustomerInner() {
   const { profile } = useAuth();
@@ -52,26 +57,29 @@ function CustomerInner() {
   // Skeleton yang menyerupai layout asli
   if (isLoading) {
     return (
-      <main className="mx-auto w-full max-w-5xl flex-1 animate-pulse px-6 py-10">
-        <div className="h-4 w-40 rounded bg-zinc-200" />
-        <div className="mt-2 h-8 w-2/3 rounded-lg bg-zinc-200" />
-        <div className="mt-2 h-4 w-1/2 rounded bg-zinc-100" />
-        <div className="mt-6 h-24 rounded-2xl bg-zinc-200" />
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="h-36 rounded-2xl bg-zinc-100" />
-          <div className="h-36 rounded-2xl bg-zinc-100" />
+      <DashboardShell role="customer" title="Dashboard" contain="5xl">
+        <div className="animate-pulse" aria-hidden="true">
+          <div className="h-4 w-40 rounded bg-zinc-200" />
+          <div className="mt-2 h-8 w-2/3 rounded-lg bg-zinc-200" />
+          <div className="mt-2 h-4 w-1/2 rounded bg-zinc-100" />
+          <div className="mt-6 h-24 rounded-2xl bg-zinc-200" />
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="h-36 rounded-2xl bg-zinc-100" />
+            <div className="h-36 rounded-2xl bg-zinc-100" />
+          </div>
+          <div className="mt-8 grid gap-8 md:grid-cols-2">
+            <div className="h-48 rounded-2xl bg-zinc-100" />
+            <div className="h-48 rounded-2xl bg-zinc-100" />
+          </div>
         </div>
-        <div className="mt-8 grid gap-8 md:grid-cols-2">
-          <div className="h-48 rounded-2xl bg-zinc-100" />
-          <div className="h-48 rounded-2xl bg-zinc-100" />
-        </div>
-      </main>
+        <span className="sr-only">Memuat dashboard…</span>
+      </DashboardShell>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
-      <PageHeader
+    <DashboardShell role="customer" title="Dashboard" contain="5xl">
+      <DashboardHero
         eyebrow="Dashboard Customer"
         title={`Halo, ${profile?.nama ?? "Customer"}`}
         desc="Kelola estimasi biaya dan pantau progres pesanan Anda."
@@ -80,12 +88,15 @@ function CustomerInner() {
       {/* CTA utama — gradasi ink brand + aksen kuning */}
       <Link
         href="/customer/pesan"
-        className="group relative mt-6 flex items-center justify-between gap-4 overflow-hidden rounded-2xl bg-moon-ink p-5 text-white transition hover:brightness-110 sm:p-6"
+        className="group relative mt-6 flex items-center justify-between gap-4 overflow-hidden rounded-2xl bg-moon-ink p-5 text-white transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue sm:p-6"
       >
-        <span className="absolute -right-10 -top-14 h-40 w-40 rounded-full bg-moon-yellow/20 transition-transform duration-300 group-hover:scale-125" />
+        <span
+          aria-hidden="true"
+          className="absolute -right-10 -top-14 h-40 w-40 rounded-full bg-moon-yellow/20 transition-transform duration-300 group-hover:scale-125"
+        />
         <span className="relative flex min-w-0 items-center gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-moon-yellow text-moon-ink">
-            <PackagePlus className="h-6 w-6" strokeWidth={2} />
+            <PackagePlus className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
           </span>
           <span className="min-w-0">
             <span className="block font-semibold">Buat pesanan baru</span>
@@ -97,19 +108,19 @@ function CustomerInner() {
         </span>
         <span className="relative flex shrink-0 items-center gap-1.5 rounded-full bg-moon-yellow px-4 py-2 text-sm font-semibold text-moon-ink">
           Pesan
-          <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+          <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
         </span>
       </Link>
 
       {/* Aksi cepat — aksen brand, konsisten dengan sistem desain */}
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
         <Link
           href="/customer/estimasi"
-          className="group flex flex-col justify-between rounded-2xl border border-zinc-200 border-t-4 border-t-moon-yellow bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+          className="group flex flex-col justify-between rounded-2xl border border-zinc-200 border-t-4 border-t-moon-yellow bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue sm:p-6"
         >
           <div className="flex items-center justify-between">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-moon-ink text-moon-yellow">
-              <Calculator className="h-6 w-6" strokeWidth={1.75} />
+              <Calculator className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
             </span>
             <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600">
               {estimasi.length} Tersimpan
@@ -127,11 +138,11 @@ function CustomerInner() {
 
         <Link
           href="/customer/orders"
-          className="group flex flex-col justify-between rounded-2xl border border-zinc-200 border-t-4 border-t-moon-blue bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+          className="group flex flex-col justify-between rounded-2xl border border-zinc-200 border-t-4 border-t-moon-blue bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue sm:p-6"
         >
           <div className="flex items-center justify-between">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-moon-blue/10 text-moon-blue">
-              <ShoppingCart className="h-6 w-6" strokeWidth={1.75} />
+              <ShoppingCart className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
             </span>
             <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600">
               {orders.length} Pesanan
@@ -146,31 +157,21 @@ function CustomerInner() {
         </Link>
       </div>
 
-      <div className="mt-10 grid items-start gap-8 md:grid-cols-2">
+      <div className="mt-8 grid items-start gap-6 md:grid-cols-2 md:gap-8">
         {/* Pesanan Terbaru Section */}
         <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-moon-ink">
-              Pesanan Terbaru
-              <span
-                title="Status terupdate otomatis"
-                className="flex items-center gap-1.5 rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700"
-              >
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-600" />
-                </span>
-                Live
-              </span>
-            </h2>
-            {orders.length > 5 && (
-              <Link
-                href="/customer/orders"
-                className="text-sm font-medium text-moon-blue hover:underline"
-              >
-                Lihat semua
-              </Link>
-            )}
+          <div className="mb-4">
+            <SectionHead
+              title="Pesanan Terbaru"
+              live
+              action={
+                orders.length > 5 && (
+                  <Link href="/customer/orders" className={textLinkClass}>
+                    Lihat semua
+                  </Link>
+                )
+              }
+            />
           </div>
           <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
             <ul className="divide-y divide-zinc-100">
@@ -178,7 +179,7 @@ function CustomerInner() {
                 <li key={o.id}>
                   <Link
                     href={`/customer/orders/${o.id}`}
-                    className="flex items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-moon-yellow/10"
+                    className="flex items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-moon-yellow/10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-moon-blue"
                   >
                     <div className="flex min-w-0 flex-col">
                       <span className="font-mono text-sm font-medium text-moon-ink">
@@ -190,7 +191,7 @@ function CustomerInner() {
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1.5">
                       <span className="font-semibold text-moon-ink">
-                        Rp {o.total_harga.toLocaleString("id-ID")}
+                        {formatRupiah(o.total_harga)}
                       </span>
                       <Badge tone={orderTone(o.status_order)}>
                         {o.status_order}
@@ -202,10 +203,7 @@ function CustomerInner() {
               {orders.length === 0 && (
                 <EmptyRow>
                   Belum ada pesanan aktif.{" "}
-                  <Link
-                    href="/customer/pesan"
-                    className="font-medium text-moon-blue hover:underline"
-                  >
+                  <Link href="/customer/pesan" className={textLinkClass}>
                     Buat pesanan pertama →
                   </Link>
                 </EmptyRow>
@@ -216,18 +214,17 @@ function CustomerInner() {
 
         {/* Estimasi Terakhir Section */}
         <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-moon-ink">
-              Riwayat Estimasi
-            </h2>
-            {estimasi.length > 5 && (
-              <Link
-                href="/customer/estimasi"
-                className="text-sm font-medium text-moon-blue hover:underline"
-              >
-                Lihat semua
-              </Link>
-            )}
+          <div className="mb-4">
+            <SectionHead
+              title="Riwayat Estimasi"
+              action={
+                estimasi.length > 5 && (
+                  <Link href="/customer/estimasi" className={textLinkClass}>
+                    Lihat semua
+                  </Link>
+                )
+              }
+            />
           </div>
           <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
             <ul className="divide-y divide-zinc-100">
@@ -242,7 +239,7 @@ function CustomerInner() {
                     </span>
                     <Link
                       href={`/customer/pesan?estimasi=${e.id}`}
-                      className="mt-0.5 w-fit text-xs font-semibold text-moon-blue hover:underline"
+                      className={`${textLinkClass} mt-0.5 w-fit text-xs font-semibold`}
                     >
                       Pesan produk ini →
                     </Link>
@@ -255,10 +252,7 @@ function CustomerInner() {
               {estimasi.length === 0 && (
                 <EmptyRow>
                   Belum ada data estimasi.{" "}
-                  <Link
-                    href="/customer/estimasi"
-                    className="font-medium text-moon-blue hover:underline"
-                  >
+                  <Link href="/customer/estimasi" className={textLinkClass}>
                     Buat estimasi baru →
                   </Link>
                 </EmptyRow>
@@ -267,7 +261,7 @@ function CustomerInner() {
           </div>
         </section>
       </div>
-    </main>
+    </DashboardShell>
   );
 }
 

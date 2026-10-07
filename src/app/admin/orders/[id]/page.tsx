@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 import { RequireRole } from "@/components/AuthGuard";
-import { AlertCircle } from "lucide-react";
+import { DashboardShell } from "@/components/dashboard/Shell";
+import { AlertCircle, ClipboardList, Factory, Palette, Send } from "lucide-react";
 import {
   ProduksiProgress,
   TrackingTimeline,
@@ -23,7 +24,7 @@ import {
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { hapusFileStorage } from "@/lib/storage";
 import { usePelangganMap, useProdukMap } from "@/hooks/useLookup";
-import { LABEL_TAHAP, TAHAP_PRODUKSI, formatRupiah } from "@/lib/estimasi";
+import { LABEL_TAHAP, TAHAP_PRODUKSI, formatRupiah, formatTanggal } from "@/lib/estimasi";
 import type {
   DetailOrder,
   Order,
@@ -218,41 +219,80 @@ function AdminDetailInner() {
 
   if (!order) {
     return (
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+      <DashboardShell role="admin" title="Kelola Order" contain="3xl">
         {notFound ? (
-          <>
+          <Card className="text-center">
             <p className="text-sm text-zinc-500">
               Order tidak ditemukan (mungkin sudah dihapus atau ID salah).
             </p>
-            <div className="mt-4">
+            <div className="mt-4 flex justify-center">
               <BackLink href="/admin">Dashboard admin</BackLink>
             </div>
-          </>
+          </Card>
         ) : (
-          <p className="text-sm text-zinc-500">Memuat order…</p>
+          <div role="status" aria-label="Memuat order">
+            <span className="sr-only">Memuat order…</span>
+            <div className="animate-pulse space-y-4" aria-hidden="true">
+              <div className="h-8 w-2/3 rounded-lg bg-zinc-200" />
+              <div className="h-32 rounded-2xl bg-zinc-200" />
+              <div className="h-24 rounded-2xl bg-zinc-100" />
+              <div className="h-48 rounded-2xl bg-zinc-100" />
+            </div>
+          </div>
         )}
-      </main>
+      </DashboardShell>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 space-y-4 px-6 py-10">
+    <DashboardShell role="admin" title="Kelola Order" contain="3xl" className="space-y-4">
       <BackLink href="/admin">Dashboard admin</BackLink>
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-semibold text-moon-ink cursor-pointer">
-          Kelola order <code>{order.id.slice(0, 8)}…</code>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h1 className="text-2xl font-bold tracking-tight text-moon-ink">
+          Kelola order <code>#{order.id.slice(0, 8)}</code>
         </h1>
         <Badge tone={orderTone(order.status_order)}>{order.status_order}</Badge>
-        <DangerButton disabled={busy} onClick={() => setShowDeleteModal(true)}>
-          Hapus order
-        </DangerButton>
-      </div>
-      <p className="text-sm text-zinc-500">
-        Pelanggan:{" "}
-        <span className="font-medium text-moon-ink">
-          {namaPelanggan[order.id_pelanggan] ?? "Memuat…"}
+        <span className="ml-auto">
+          <DangerButton disabled={busy} onClick={() => setShowDeleteModal(true)}>
+            Hapus order
+          </DangerButton>
         </span>
-      </p>
+      </div>
+
+      <Card>
+        <h2 className="flex items-center gap-2 font-semibold text-moon-ink">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-moon-yellow/20 text-moon-ink">
+            <ClipboardList className="h-4 w-4" aria-hidden="true" />
+          </span>
+          Ringkasan order
+        </h2>
+        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
+          <div className="min-w-0">
+            <dt className="text-xs text-zinc-500">Pelanggan</dt>
+            <dd className="mt-0.5 truncate text-sm font-semibold text-moon-ink">
+              {namaPelanggan[order.id_pelanggan] ?? "Memuat…"}
+            </dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-xs text-zinc-500">Tanggal order</dt>
+            <dd className="mt-0.5 truncate text-sm font-semibold text-moon-ink">
+              {formatTanggal(order.tgl_order)}
+            </dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-xs text-zinc-500">Estimasi selesai</dt>
+            <dd className="mt-0.5 truncate text-sm font-semibold text-moon-ink">
+              {order.estimasi_selesai ? formatTanggal(order.estimasi_selesai) : "-"}
+            </dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-xs text-zinc-500">Total harga</dt>
+            <dd className="mt-0.5 truncate text-base font-bold text-moon-blue">
+              {formatRupiah(order.total_harga)}
+            </dd>
+          </div>
+        </dl>
+      </Card>
       {msg && <ErrorBox>{msg}</ErrorBox>}
 
       <Card>
@@ -280,7 +320,7 @@ function AdminDetailInner() {
                   setBusy(false);
                 }
               }}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-40 ${
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue disabled:cursor-not-allowed disabled:opacity-40 ${
                 order.status_order === s
                   ? "border-moon-ink bg-moon-ink text-moon-yellow"
                   : "border-zinc-300 hover:border-moon-blue hover:text-moon-blue"
@@ -295,7 +335,10 @@ function AdminDetailInner() {
       <ProduksiProgress order={order} produksi={produksi} />
 
       <Card>
-        <h2 className="font-semibold text-moon-ink">
+        <h2 className="flex items-center gap-2 font-semibold text-moon-ink">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-moon-pink/10 text-moon-pink">
+            <Palette className="h-4 w-4" aria-hidden="true" />
+          </span>
           Desain custom customer ({detail.length} item)
         </h2>
         {detail.length === 0 ? (
@@ -337,7 +380,16 @@ function AdminDetailInner() {
       </Card>
 
       <Card>
-        <h2 className="font-semibold text-moon-ink">Update tahap produksi</h2>
+        <h2 className="flex items-center gap-2 font-semibold text-moon-ink">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-moon-blue/10 text-moon-blue">
+            <Factory className="h-4 w-4" aria-hidden="true" />
+          </span>
+          Kelola progres
+        </h2>
+
+        <h3 className="mt-4 text-sm font-semibold text-moon-ink">
+          Update tahap produksi
+        </h3>
         {tahapUsang.length > 0 && (
           <div className="mt-3 rounded-xl border border-moon-pink/30 bg-moon-pink/5 p-3 text-sm">
             <p className="font-medium text-moon-ink">
@@ -351,7 +403,7 @@ function AdminDetailInner() {
             <DangerButton
               disabled={busy}
               onClick={bersihkanTahapUsang}
-              className="mt-2 !py-1.5 text-xs"
+              className="mt-2 text-xs"
             >
               Bersihkan tahap usang
             </DangerButton>
@@ -392,26 +444,31 @@ function AdminDetailInner() {
           <PrimaryButton
             disabled={busy}
             onClick={() => tambahProduksi("selesai")}
-            className="!py-1.5"
           >
             Tandai selesai
           </PrimaryButton>
         </div>
-      </Card>
 
-      <Card>
-        <h2 className="font-semibold text-moon-ink">Tracking manual</h2>
-        <div className="mt-3 flex gap-2">
+        <div className="my-4 border-t border-zinc-100" aria-hidden="true" />
+
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-moon-ink">
+          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
+            <Send className="h-3.5 w-3.5" aria-hidden="true" />
+          </span>
+          Tracking manual
+        </h3>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
             value={statusTracking}
             onChange={(e) => setStatusTracking(e.target.value)}
             placeholder="cth: Paket diserahkan ke kurir"
+            aria-label="Status tracking manual"
             className="w-full rounded-xl border border-zinc-300 px-3 py-2 text-sm"
           />
           <PrimaryButton
             disabled={busy || !statusTracking}
             onClick={tambahTracking}
-            className="shrink-0 !py-1.5"
+            className="shrink-0"
           >
             Kirim
           </PrimaryButton>
@@ -479,7 +536,7 @@ function AdminDetailInner() {
           </div>
         </div>
       )}
-    </main>
+    </DashboardShell>
   );
 }
 

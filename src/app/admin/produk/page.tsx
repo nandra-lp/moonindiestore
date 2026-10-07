@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { RequireRole } from "@/components/AuthGuard";
-import { AlertCircle } from "lucide-react";
+import { DashboardShell } from "@/components/dashboard/Shell";
+import { AlertCircle, Package } from "lucide-react";
+import { ProductCard, ProductCardSkeleton } from "@/components/dashboard/ProductCard";
 import {
   createProduk,
   deleteProduk,
@@ -11,13 +13,11 @@ import {
   type WithDocId,
 } from "@/lib/db";
 import { hapusGambarProduk, uploadGambarProduk } from "@/lib/storage";
-import { formatRupiah } from "@/lib/estimasi";
 import type { Produk } from "@/types/firestore";
 import {
   BackLink,
   Card,
   DangerButton,
-  EmptyRow,
   ErrorBox,
   GhostButton,
   PageHeader,
@@ -50,11 +50,17 @@ function ProdukInner() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [productToDelete, setProductToDelete] = useState<WithDocId<Produk> | null>(null);
 
   function reload() {
-    listProduk().then(setRows).catch(() => {});
+    listProduk()
+      .then((rows) => {
+        setRows(rows);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }
 
   useEffect(reload, []);
@@ -152,7 +158,7 @@ function ProdukInner() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
+    <DashboardShell role="admin" title="Katalog Produk" contain="4xl">
       <BackLink href="/admin">Dashboard admin</BackLink>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
         <PageHeader
@@ -261,55 +267,51 @@ function ProdukInner() {
         </Card>
       )}
 
-      <Card className="mt-6 overflow-hidden !p-0">
-        <ul className="divide-y divide-zinc-100">
-          {rows.map((p) => (
-            <li
-              key={p.id}
-              className="flex flex-col sm:flex-row sm:items-center gap-4 px-5 py-4 transition-colors hover:bg-zinc-50/80"
+      <div className="mt-6">
+        {loading ? (
+          <div
+            role="status"
+            aria-label="Memuat katalog produk"
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <span className="sr-only">Memuat katalog produk…</span>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-zinc-300 bg-white px-4 py-14 text-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-moon-yellow/20 text-moon-ink">
+              <Package className="h-7 w-7" strokeWidth={1.75} aria-hidden="true" />
+            </span>
+            <div>
+              <p className="font-semibold text-moon-ink">Belum ada produk</p>
+              <p className="mt-1 text-sm text-zinc-500">
+                Tambahkan produk pertama — katalog publik langsung ikut berubah.
+              </p>
+            </div>
+            <PrimaryButton
+              type="button"
+              onClick={openAdd}
+              className="mt-1"
             >
-              <div className="flex flex-1 items-center gap-4 min-w-0">
-                <ProductThumb
-                  url={p.gambar_url}
-                  nama={p.nama_produk}
-                  size="md"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold text-moon-ink">
-                    {p.nama_produk}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
-                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
-                      {p.jenis_produk}
-                    </span>
-                    <span>
-                      {formatRupiah(p.harga_dasar)}
-                      <span className="text-zinc-400">/{p.satuan}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 sm:shrink-0 mt-2 sm:mt-0">
-                <GhostButton
-                  disabled={busy}
-                  onClick={() => openEdit(p)}
-                  className="flex-1 sm:flex-none justify-center !px-4"
-                >
-                  Ubah
-                </GhostButton>
-                <DangerButton
-                  disabled={busy}
-                  onClick={() => setProductToDelete(p)}
-                  className="flex-1 sm:flex-none justify-center !px-4"
-                >
-                  Hapus
-                </DangerButton>
-              </div>
-            </li>
-          ))}
-          {rows.length === 0 && <EmptyRow>Belum ada produk.</EmptyRow>}
-        </ul>
-      </Card>
+              + Tambah produk
+            </PrimaryButton>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {rows.map((p) => (
+              <ProductCard
+                key={p.id}
+                produk={p}
+                busy={busy}
+                onEdit={() => openEdit(p)}
+                onDelete={() => setProductToDelete(p)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Delete Confirmation Modal */}
       {productToDelete && (
@@ -358,7 +360,7 @@ function ProdukInner() {
           </div>
         </div>
       )}
-    </main>
+    </DashboardShell>
   );
 }
 

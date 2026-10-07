@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RequireRole } from "@/components/AuthGuard";
+import { DashboardShell } from "@/components/dashboard/Shell";
 import { listEstimasiRecent, type WithDocId } from "@/lib/db";
 import { formatRupiah, formatTanggal } from "@/lib/estimasi";
 import type { PerkiraanHarga } from "@/types/firestore";
@@ -15,7 +16,7 @@ function OwnerEstimasiInner() {
   }, []);
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
+    <DashboardShell role="owner" title="Estimasi Harga" contain="4xl">
       <BackLink href="/owner">Dashboard owner</BackLink>
       <div className="mt-2">
         <PageHeader
@@ -62,7 +63,7 @@ function OwnerEstimasiInner() {
           </div>
         )}
       </div>
-    </main>
+    </DashboardShell>
   );
 }
 

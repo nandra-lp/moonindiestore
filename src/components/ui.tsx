@@ -1,7 +1,7 @@
 // Primitif UI bersama agar seluruh halaman selaras dengan brand.
 // Aturan pakai:
 // - Aksi utama      → PrimaryButton / PrimaryLink (kuning brand + teks ink)
-// - Aksi sekunder   → GhostButton / GhostLink (outline)
+// - Aksi sekunder   → GhostButton (outline)
 // - Aksi bahaya     → DangerButton (pink brand)
 // - Info/link teks  → text-moon-blue
 // - Status order    → orderTone(): menunggu=zinc, diproses=blue,
@@ -188,33 +188,14 @@ export function PrimaryLink({
   );
 }
 
-export function GhostLink({
-  href,
-  children,
-  className = "",
-}: {
-  href: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`inline-flex items-center justify-center rounded-full border border-moon-ink/25 px-5 py-2.5 text-sm font-medium text-moon-ink transition hover:border-moon-blue hover:text-moon-blue ${className}`}
-    >
-      {children}
-    </Link>
-  );
-}
-
 export function BackLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link
       href={href}
-      className="group inline-flex items-center gap-2 text-sm font-medium text-zinc-500 transition-colors hover:text-moon-ink"
+      className="group inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white py-1.5 pl-1.5 pr-4 text-sm font-medium text-zinc-600 shadow-sm transition-all duration-200 hover:-translate-x-0.5 hover:border-zinc-300 hover:text-moon-ink hover:shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue"
     >
-      <span className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 transition-colors group-hover:border-zinc-300 group-hover:bg-white shadow-sm">
-        <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-0.5 text-zinc-400 group-hover:text-moon-ink" strokeWidth={2.5} />
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition-colors duration-200 group-hover:bg-moon-yellow group-hover:text-moon-ink">
+        <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-px" strokeWidth={2.5} aria-hidden="true" />
       </span>
       {children}
     </Link>
@@ -223,7 +204,21 @@ export function BackLink({ href, children }: { href: string; children: ReactNode
 
 export function ErrorBox({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl border border-moon-pink/30 bg-moon-pink/10 px-3 py-2 text-sm text-moon-pink">
+    <p
+      role="alert"
+      className="rounded-xl border border-moon-pink/30 bg-moon-pink/10 px-3 py-2 text-sm text-moon-pink"
+    >
+      {children}
+    </p>
+  );
+}
+
+export function SuccessBox({ children }: { children: ReactNode }) {
+  return (
+    <p
+      role="status"
+      className="rounded-xl border border-green-600/30 bg-green-50 px-3 py-2 text-sm text-green-700"
+    >
       {children}
     </p>
   );
@@ -257,8 +252,9 @@ export function BrandMark({
     <Image
       src="/logo-mis.png"
       alt="Logo Moon Indie Store"
-      width={96}
-      height={96}
+      width={256}
+      height={256}
+      priority
       className={`${className} shrink-0 rounded-xl object-cover ${plain ? "" : "shadow-sm ring-1 ring-black/10"}`}
     />
   );
@@ -332,15 +328,22 @@ export function ProductThumb({
   url,
   nama,
   size = "md",
+  fill = false,
 }: {
   url?: string | null;
   nama: string;
   size?: "sm" | "md" | "lg";
+  /** fill=true: gambar mengisi penuh kontainer (untuk kartu katalog), bukan kotak thumbnail. */
+  fill?: boolean;
 }) {
   if (!url) {
     return (
       <span
-        className={`flex shrink-0 items-center justify-center rounded-xl bg-moon-yellow/25 ${thumbSizes[size]}`}
+        className={
+          fill
+            ? "flex h-full w-full items-center justify-center bg-moon-yellow/25 text-4xl"
+            : `flex shrink-0 items-center justify-center rounded-xl bg-moon-yellow/25 ${thumbSizes[size]}`
+        }
         aria-label={`Belum ada gambar untuk ${nama}`}
       >
         📦
@@ -353,7 +356,11 @@ export function ProductThumb({
       src={url}
       alt={nama}
       loading="lazy"
-      className={`shrink-0 rounded-xl border border-zinc-200 object-cover ${thumbSizes[size]}`}
+      className={
+        fill
+          ? "h-full w-full object-cover"
+          : `shrink-0 rounded-xl border border-zinc-200 object-cover ${thumbSizes[size]}`
+      }
     />
   );
 }

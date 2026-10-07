@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { RequireRole } from "@/components/AuthGuard";
+import { DashboardShell } from "@/components/dashboard/Shell";
 import { useAuth } from "@/context/AuthContext";
 import { listDetailByOrderIds, listOrdersByPelanggan, type WithDocId } from "@/lib/db";
 import { ringkasNamaProduk, useProdukMap } from "@/hooks/useLookup";
@@ -37,7 +38,7 @@ function OrdersInner() {
   }, [orders]);
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+    <DashboardShell role="customer" title="Pesanan Saya" contain="3xl">
       <BackLink href="/customer">Kembali</BackLink>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
         <PageHeader
@@ -96,7 +97,7 @@ function OrdersInner() {
           </Card>
         )}
       </div>
-    </main>
+    </DashboardShell>
   );
 }
 
