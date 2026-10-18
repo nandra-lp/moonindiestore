@@ -107,7 +107,7 @@ function OwnerInner() {
       </div>
 
       {!loaded ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4" aria-hidden="true">
+        <div className="mt-4 grid gap-4 sm:gap-5 sm:grid-cols-2" aria-hidden="true">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
@@ -121,7 +121,7 @@ function OwnerInner() {
           <span className="sr-only">Memuat order…</span>
         </div>
       ) : (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
+        <div className="mt-4 grid gap-4 sm:gap-5 sm:grid-cols-2">
           {filtered.map((o) => (
             <OrderCard
               key={o.id}

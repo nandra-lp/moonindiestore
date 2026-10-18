@@ -29,8 +29,11 @@ import {
   PrimaryButton,
   ProductThumb,
 } from "@/components/ui";
+import { Package, Check, X, AlertCircle, FileText, Upload } from "lucide-react";
 
-const inputCls = "mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2";
+const inputCls = "mt-1 w-full rounded-xl border border-zinc-300 px-4 py-3 bg-white transition focus:border-cyan focus:outline-none focus:ring-2 focus:ring-cyan/20";
+const labelCls = "block text-base font-medium text-ink mb-1";
+const helpCls = "text-sm text-zinc-500";
 
 function PesanInner() {
   const router = useRouter();
@@ -43,15 +46,9 @@ function PesanInner() {
   const [desainFile, setDesainFile] = useState<File | null>(null);
   const [desainPreview, setDesainPreview] = useState<string | null>(null);
   const [catatanDesain, setCatatanDesain] = useState("");
-  // Diagnosis keterkaitan akun: users.id_pelanggan -> pelanggan.uid == auth uid.
-  // Rules menolak "menyimpan order" bila rantai ini putus.
-  const [linkage, setLinkage] = useState<null | {
-    ok: boolean;
-    info: string;
-  }>(null);
+  const [linkage, setLinkage] = useState<null | { ok: boolean; info: string }>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  // ID estimasi asal (bila dibuka via ?estimasi=), disimpan ke order.id_estimasi.
   const [estimasiId, setEstimasiId] = useState<string | null>(null);
 
   const idp = profile?.id_pelanggan ?? null;
@@ -63,37 +60,22 @@ function PesanInner() {
     listProduk().then(setProdukList).catch(() => {});
   }, []);
 
-  // Cek keterkaitan akun setiap idp berubah. Read dokumen sendiri selalu
-  // diizinkan, jadi hasil cek ini valid apa pun versi rules yang terpublish.
-  // (setState hanya di dalam callback promise, mengikuti pola halaman lain.)
   useEffect(() => {
     if (!idp || !firebaseUser) return;
     const uid = firebaseUser.uid;
     getPelanggan(idp)
       .then((p) => {
         if (!p) {
-          setLinkage({
-            ok: false,
-            info: `dokumen pelanggan "${idp}" tidak ditemukan.`,
-          });
+          setLinkage({ ok: false, info: `Dokumen pelanggan "${idp}" tidak ditemukan.` });
         } else if (p.uid !== uid) {
-          setLinkage({
-            ok: false,
-            info: `field uid pelanggan ("${p.uid ?? "-"}") beda dengan UID login ("${uid}").`,
-          });
+          setLinkage({ ok: false, info: `UID pelanggan ("${p.uid ?? "-"}") beda dengan UID login ("${uid}").` });
         } else {
           setLinkage({ ok: true, info: p.nama });
         }
       })
-      .catch(() =>
-        setLinkage({
-          ok: false,
-          info: `dokumen pelanggan "${idp}" tidak bisa dibaca.`,
-        })
-      );
+      .catch(() => setLinkage({ ok: false, info: `Dokumen pelanggan "${idp}" tidak bisa dibaca.` }));
   }, [idp, firebaseUser]);
 
-  // Prefill dari riwayat estimasi: /customer/pesan?estimasi=<id>.
   useEffect(() => {
     const param = searchParams.get("estimasi");
     if (!param || !idp) return;
@@ -119,8 +101,6 @@ function PesanInner() {
     if (f) setMsg(null);
   }
 
-  // Bungkus tiap langkah tulis agar error tahu persis langkah yang gagal
-  // (order / upload desain / item / tracking) — penting untuk diagnosis rules.
   async function langkah<T>(nama: string, fn: () => Promise<T>): Promise<T> {
     try {
       return await fn();
@@ -149,13 +129,11 @@ function PesanInner() {
 
     let orderId: string | null = null;
     const desainPaths: string[] = [];
-    
+
     try {
-      // 1. Generate ID secara lokal tanpa network request ke server
       const newOrderId = generateOrderId();
       orderId = newOrderId;
 
-      // 2. Upload desain custom (opsional) menggunakan ID order
       let desain_url: string | null = null;
       let desain_path: string | null = null;
       if (desainFile) {
@@ -167,7 +145,6 @@ function PesanInner() {
         desainPaths.push(up.path);
       }
 
-      // 3. Batch Write: Simpan Order, Detail, dan Tracking sekaligus
       try {
         await langkah("menyimpan pesanan ke database", () =>
           createOrderWithDetailsBatch(
@@ -198,15 +175,10 @@ function PesanInner() {
           )
         );
       } catch (inner) {
-        // Rollback jauh lebih sederhana: Firestore batch bersifat atomic,
-        // jadi kita cukup hapus file Storage jika db gagal. 
-        // Tidak perlu hapus dokumen yatim satu per satu.
-        await Promise.allSettled(
-          desainPaths.map((p) => hapusFileStorage(p))
-        );
+        await Promise.allSettled(desainPaths.map((p) => hapusFileStorage(p)));
         throw inner;
       }
-      
+
       router.push(`/customer/orders/${orderId}`);
     } catch (err) {
       const raw = err instanceof Error ? err.message : "Coba lagi.";
@@ -214,7 +186,7 @@ function PesanInner() {
       setMsg(
         `Gagal membuat pesanan: ${raw}` +
           (isIzin
-            ? " Kemungkinan: (1) firestore.rules terbaru belum di-Publish di Firebase Console (cek status keterkaitan di atas form — bila akun dinyatakan tertaut, berarti penyebabnya ini), atau (2) akun ini tidak tertaut ke data pelanggan. Minta admin memeriksa keduanya."
+            ? " Kemungkinan: (1) firestore.rules terbaru belum di-Publish di Firebase Console, atau (2) akun tidak tertaut ke data pelanggan. Minta admin memeriksa keduanya."
             : "")
       );
     } finally {
@@ -223,167 +195,257 @@ function PesanInner() {
   }
 
   return (
-    <DashboardShell role="customer" title="Pesanan Baru" contain="3xl">
-      <BackLink href="/customer">Kembali</BackLink>
-      <div className="mt-2">
-        <PageHeader
-          eyebrow="Customer · Pesanan baru"
-          title="Buat pesanan"
-          desc="Pesanan masuk dengan status menunggu, lalu diproses admin."
-        />
+    <DashboardShell role="customer" title="Pesanan Baru" contain="6xl" className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <BackLink href="/customer">Kembali</BackLink>
+        <div className="flex-1">
+          <PageHeader
+            eyebrow="Customer"
+            title="Pesanan baru"
+            desc="Isi spesifikasi, lampirkan desain, kirim untuk diproses."
+          />
+        </div>
       </div>
 
       {produkList.length === 0 ? (
-        <Card className="mt-6">
-          <p className="text-sm text-zinc-500">
-            Katalog produk masih kosong. Minta admin menambah data di halaman{" "}
-            <code>/admin/produk</code>.
+        <Card className="py-16 text-center border-zinc-200">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/15">
+            <Package className="h-8 w-8 text-ink" aria-hidden="true" />
+          </div>
+          <h3 className="text-xl font-bold text-ink">Belum ada produk</h3>
+          <p className="mt-2 text-sm text-zinc-600 max-w-md mx-auto">
+            Katalog masih kosong. Mintalah admin menambah produk di{" "}
+            <code className="bg-cream px-1.5 py-0.5 rounded text-xs font-mono text-ink">/admin/produk</code>
+            {" agar kamu bisa memesan."}
           </p>
         </Card>
       ) : (
-        <Card className="mt-6">
-          <form onSubmit={onSubmit}>
-            <label className="text-sm font-medium">
-              Produk
-              <span className="mt-2 grid gap-2 sm:grid-cols-2">
-                {produkList.map((p) => (
+        <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
+          {/* Product Selection — Sample Cards */}
+          <Card className="p-0 border-zinc-200">
+            <div className="px-5 py-4 border-b border-zinc-100">
+              <h2 className="text-lg font-bold text-ink">Pilih produk</h2>
+            </div>
+            <div
+              role="group"
+              aria-label="Pilih produk"
+              className="p-5 md:p-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {produkList.map((p) => {
+                const selected = idProduk === p.id;
+                return (
                   <button
                     key={p.id}
                     type="button"
                     onClick={() => setIdProduk(p.id)}
-                    className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${
-                      idProduk === p.id
-                        ? "border-moon-blue bg-moon-blue/5 ring-2 ring-moon-blue/30"
-                        : "border-zinc-200 hover:border-zinc-400"
+                    aria-pressed={selected}
+                    className={`relative group overflow-hidden rounded-xl border bg-white p-5 transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan ${
+                      selected
+                        ? "border-gold ring-2 ring-gold/40 shadow-none"
+                        : "border-zinc-200 hover:border-zinc-300"
                     }`}
                   >
-                    <ProductThumb
-                      url={p.gambar_url}
-                      nama={p.nama_produk}
-                      size="md"
-                    />
-                    <span>
-                      <span className="block text-sm font-semibold text-moon-ink">
-                        {p.nama_produk}
+                    {selected && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-ink"
+                      >
+                        <Check className="h-3 w-3" strokeWidth={3} />
                       </span>
-                      <span className="block text-xs text-zinc-500">
-                        {formatRupiah(p.harga_dasar)}/{p.satuan}
-                      </span>
-                    </span>
+                    )}
+                    <ProductThumb url={p.gambar_url} nama={p.nama_produk} size="lg" />
+                    <div className="mt-4 text-center">
+                      <p className="font-medium text-ink line-clamp-1">{p.nama_produk}</p>
+                      <p className="mt-2 text-sm text-zinc-500 font-mono">
+                        {formatRupiah(p.harga_dasar)} <span className="text-zinc-400">/{p.satuan}</span>
+                      </p>
+                    </div>
+                    <span className="absolute inset-0" aria-hidden="true" />
                   </button>
-                ))}
-              </span>
-            </label>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="text-sm font-medium">
-                Jumlah ({produk?.satuan ?? "pcs"})
-                <input
-                  type="number"
-                  min={1}
-                  required
-                  value={jumlah}
-                  onChange={(e) => setJumlah(Number(e.target.value))}
-                  className={inputCls}
-                />
-              </label>
-              <div className="rounded-xl bg-moon-ink px-4 py-3 text-white sm:self-end">
-                <p className="text-xs text-white/70">
-                  {formatRupiah(hargaSatuan)} × {jumlah}
-                </p>
-                <p className="text-xl font-bold text-moon-yellow">
-                  {formatRupiah(total)}
-                </p>
-              </div>
+                );
+              })}
             </div>
+          </Card>
 
-            <label className="mt-3 block text-sm font-medium">
-              Spesifikasi / catatan (ukuran, bahan, warna, dll.)
-              <textarea
-                rows={3}
-                value={spesifikasi}
-                onChange={(e) => setSpesifikasi(e.target.value)}
-                placeholder="cth: ukuran 20×30 cm, laminasi doff, tali paper twisted"
-                className={inputCls}
-              />
-            </label>
+          {/* Form + Sticky Quote */}
+          <div className="space-y-6">
+            <Card className="border-zinc-200">
+              <form onSubmit={onSubmit} className="p-6 md:p-8 space-y-7">
+                {/* Spesifikasi Section */}
+                <section aria-labelledby="spec-heading" className="space-y-5 pb-6 border-b border-zinc-100">
+                  <h3 id="spec-heading" className="text-base font-semibold text-ink flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-zinc-400" aria-hidden="true" />
+                    Spesifikasi
+                  </h3>
 
-            <div className="mt-4 rounded-xl border border-dashed border-zinc-300 p-4">
-              <p className="text-sm font-semibold text-moon-ink">
-                Desain custom{" "}
-                <span className="font-normal text-zinc-500">(opsional)</span>
-              </p>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                Lampirkan file desainmu (JPG/PNG/WebP/PDF, maks 10 MB) beserta
-                instruksi untuk admin.
-              </p>
-              <div className="mt-3 flex items-center gap-3">
-                {desainPreview ? (
-                  desainFile?.type === "application/pdf" ? (
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-moon-pink/10 text-2xl">
-                      📄
-                    </span>
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element -- pratinjau blob lokal
-                    <img
-                      src={desainPreview}
-                      alt="Pratinjau desain custom"
-                      className="h-14 w-14 shrink-0 rounded-xl border border-zinc-200 object-cover"
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className={labelCls}>
+                      Jumlah <span className="text-zinc-500 font-normal">({produk?.satuan ?? "pcs"})</span>
+                      <input
+                        type="number"
+                        min={1}
+                        required
+                        value={jumlah}
+                        onChange={(e) => setJumlah(Number(e.target.value))}
+                        className={inputCls}
+                        disabled={!produk}
+                        aria-describedby={produk ? undefined : "qty-help"}
+                      />
+                      {!produk && <p id="qty-help" className={helpCls}>Pilih produk terlebih dahulu</p>}
+                    </label>
+                  </div>
+
+                  <label className={labelCls}>
+                    Spesifikasi <span className="text-zinc-500 font-normal">(ukuran, bahan, warna, finishing, dll.)</span>
+                    <textarea
+                      rows={4}
+                      value={spesifikasi}
+                      onChange={(e) => setSpesifikasi(e.target.value)}
+                      placeholder="Contoh: Paper bag kraft 20×30 cm, laminasi doff, tali paper twisted hitam, logo full color 1 sisi"
+                      className={inputCls}
+                      disabled={!produk}
                     />
-                  )
-                ) : (
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-2xl">
-                    🎨
-                  </span>
-                )}
-                <label className="text-sm font-medium">
-                  File desain
-                  <input
-                    type="file"
-                    accept="image/*,.pdf,application/pdf"
-                    onChange={(e) => onDesainChange(e.target.files?.[0] ?? null)}
-                    className="mt-1 block w-full text-sm"
-                  />
-                </label>
-              </div>
-              <label className="mt-3 block text-sm font-medium">
-                Catatan desain untuk admin
-                <textarea
-                  rows={2}
-                  value={catatanDesain}
-                  onChange={(e) => setCatatanDesain(e.target.value)}
-                  placeholder="cth: logo di tengah dada, warna dasar hitam, teks putih"
-                  className={inputCls}
-                />
-              </label>
-            </div>
+                  </label>
+                </section>
 
-            {linkage && !linkage.ok && (
-              <div className="mt-3">
-                <ErrorBox>
-                  Akun tidak tertaut ke data pelanggan: {linkage.info}{" "}
-                  Pesanan tidak bisa dibuat sampai admin memperbaikinya.
-                </ErrorBox>
-              </div>
+                {/* Desain Custom Section */}
+                <section aria-labelledby="design-heading" className="space-y-5">
+                  <h3 id="design-heading" className="text-base font-semibold text-ink flex items-center gap-2">
+                    <Upload className="h-5 w-5 text-zinc-400" aria-hidden="true" />
+                    Desain custom <span className="text-zinc-500 font-normal text-sm">(opsional)</span>
+                  </h3>
+                  <p className={helpCls}>Drag file desain (JPG, PNG, WebP, PDF — max 10 MB). Admin akan mengecek kelayakan cetak.</p>
+
+                  <div className="relative">
+                    <label className="group flex cursor-pointer items-start gap-4 rounded-xl border-2 border-dashed border-zinc-200 p-6 transition-all hover:border-gold/50 hover:bg-cream has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-cyan has-[input:focus-visible]:outline-offset-2">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf,application/pdf"
+                        onChange={(e) => onDesainChange(e.target.files?.[0] ?? null)}
+                        className="sr-only"
+                        disabled={!produk}
+                        aria-label="Pilih file desain custom"
+                      />
+                      <div className="flex shrink-0 items-center justify-center w-20 h-20 rounded-xl bg-zinc-100 transition-colors group-hover:bg-gold/10">
+                        {desainPreview ? (
+                          desainFile?.type === "application/pdf" ? (
+                            <span className="text-4xl" aria-hidden="true">📄</span>
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element -- pratinjau blob lokal
+                            <img
+                              src={desainPreview}
+                              alt="Pratinjau desain custom"
+                              className="h-20 w-20 rounded-xl object-cover"
+                            />
+                          )
+                        ) : (
+                          <span className="text-4xl" aria-hidden="true">🎨</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 pt-1">
+                        <p className="font-medium text-ink group-hover:text-cyan">
+                          {desainFile ? desainFile.name : "Klik atau tarik file desain ke sini"}
+                        </p>
+                        <p className="text-xs text-zinc-500 mt-0.5">
+                          {desainFile
+                            ? `${(desainFile.size / 1024 / 1024).toFixed(2)} MB • JPG, PNG, WebP, PDF max 10 MB`
+                            : "JPG, PNG, WebP, PDF maksimal 10 MB"}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-gold/20 px-4 py-1.5 text-sm font-bold text-ink">
+                        {desainFile ? "Ganti file" : "Siap cetak"}
+                      </span>
+                    </label>
+                    {desainFile && (
+                      <button
+                        type="button"
+                        onClick={() => onDesainChange(null)}
+                        className="absolute right-3 top-3 rounded-full p-1 text-zinc-400 hover:text-magenta hover:bg-magenta/10 focus-visible:outline-2 focus-visible:outline-cyan"
+                        aria-label="Hapus file desain"
+                      >
+                        <X className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+
+                  <label className={labelCls}>
+                    Catatan untuk produksi
+                    <textarea
+                      rows={2}
+                      value={catatanDesain}
+                      onChange={(e) => setCatatanDesain(e.target.value)}
+                      placeholder="Contoh: Logo di tengah, warna dasar hitam, teks putih, area cetak full bleed"
+                      className={inputCls}
+                      disabled={!produk}
+                    />
+                  </label>
+                </section>
+
+                {/* Linkage Status */}
+                {linkage && !linkage.ok && (
+                  <div className="rounded-xl border border-magenta/30 bg-magenta/5 p-4" role="alert">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 shrink-0 text-magenta mt-0.5" aria-hidden="true" />
+                      <div>
+                        <p className="font-medium text-ink">Akun belum tertaut ke data pelanggan</p>
+                        <p className="mt-1 text-sm text-zinc-600">{linkage.info}</p>
+                        <p className="mt-2 text-xs text-zinc-500">Pesanan tidak bisa dikirim sebelum admin memperbaiki tautan akun.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {linkage?.ok && (
+                  <div className="rounded-xl border border-green-600/30 bg-green-50 p-3">
+                    <p className="flex items-center gap-1.5 text-sm font-medium text-green-700">
+                      <span className="h-4 w-4 shrink-0" aria-hidden="true">✓</span>
+                      Akun tertaut: <span className="font-normal">{linkage.info}</span>
+                    </p>
+                  </div>
+                )}
+
+                {msg && <ErrorBox>{msg}</ErrorBox>}
+
+                <PrimaryButton
+                  type="submit"
+                  disabled={busy || !produk || (linkage !== null && !linkage.ok)}
+                  className="w-full"
+                >
+                  {busy ? "Membuat pesanan…" : "Kirim pesanan"}
+                </PrimaryButton>
+              </form>
+            </Card>
+
+            {/* Sticky Quote Card (Desktop) */}
+            {produk && (
+              <aside className="hidden lg:block">
+                <Card className="sticky top-24 border-gold/30 bg-cream/50">
+                  <div className="p-5 md:p-6 border-b border-gold/20">
+                    <h3 className="text-sm font-bold text-ink uppercase tracking-wider">Ringkasan harga</h3>
+                  </div>
+                  <dl className="p-5 md:p-6 space-y-5 text-sm md:text-base">
+                    <div className="flex justify-between gap-4 py-3 border-b border-zinc-200">
+                      <dt className="text-zinc-600">{produk.nama_produk}</dt>
+                      <dd className="font-medium text-ink whitespace-nowrap font-mono">{formatRupiah(hargaSatuan)}/{produk.satuan}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4 py-3">
+                      <dt className="text-zinc-600">Jumlah</dt>
+                      <dd className="font-medium text-ink">{jumlah} {produk.satuan}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4 py-3 border-t border-zinc-300">
+                      <dt className="font-bold text-ink text-base">Total estimasi</dt>
+                      <dd className="text-2xl font-bold text-cyan font-mono">{formatRupiah(total)}</dd>
+                    </div>
+                  </dl>
+                  <div className="px-5 md:px-6 pb-5 md:pb-6 border-t border-zinc-200">
+                    <p className="text-xs md:text-sm text-zinc-500">
+                      Total final dikonfirmasi admin setelah cek desain & spesifikasi.
+                    </p>
+                  </div>
+                </Card>
+              </aside>
             )}
-            {linkage?.ok && (
-              <p className="mt-3 text-xs font-medium text-green-600">
-                ✓ Akun tertaut ke pelanggan: {linkage.info}
-              </p>
-            )}
-            {msg && (
-              <div className="mt-3">
-                <ErrorBox>{msg}</ErrorBox>
-              </div>
-            )}
-            <PrimaryButton
-              disabled={busy || !produk || (linkage !== null && !linkage.ok)}
-              className="mt-4"
-            >
-              {busy ? "Membuat pesanan…" : "Buat pesanan"}
-            </PrimaryButton>
-          </form>
-        </Card>
+          </div>
+        </div>
       )}
     </DashboardShell>
   );

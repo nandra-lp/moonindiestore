@@ -79,7 +79,7 @@ function OwnerDetailInner() {
     <DashboardShell role="owner" title="Detail Order" contain="3xl" className="space-y-4">
       <BackLink href="/owner">Dashboard owner</BackLink>
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-semibold text-moon-ink">
+        <h1 className="text-2xl font-semibold text-moon-ink md:text-3xl">
           Order <code>{order.id.slice(0, 8)}…</code>
         </h1>
         <Badge tone={orderTone(order.status_order)}>{order.status_order}</Badge>

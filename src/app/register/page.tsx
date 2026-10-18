@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { pesanErrorAuth } from "@/lib/auth-errors";
 import { resolveTarget } from "@/lib/role-route";
-import { Card, BrandMark, ErrorBox, PrimaryButton } from "@/components/ui";
+import { Card, BrandMark, ErrorBox, PrimaryButton, SuccessBox } from "@/components/ui";
 
 // Pendaftaran mandiri KHUSUS customer (sesuai permintaan).
 // Admin/owner tidak bisa daftar dari sini — dibuat via scripts/seed-users.mjs.
@@ -23,7 +23,13 @@ export default function RegisterPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    emailRef.current?.focus();
+  }, []);
 
   // Pengguna yang sesinya masih aktif tidak perlu melihat form daftar.
   useEffect(() => {
@@ -40,9 +46,12 @@ export default function RegisterPage() {
     e.preventDefault();
     setBusy(true);
     setMsg(null);
+    setSuccessMsg(null);
     try {
       await registerCustomer(form);
-      router.replace("/customer");
+      setSuccessMsg("Akun berhasil dibuat! Mengarahkan ke dashboard…");
+      // Brief delay to show success message before redirect
+      setTimeout(() => router.replace("/customer"), 800);
     } catch (err) {
       setMsg(pesanErrorAuth(err, "Gagal mendaftar. Coba lagi."));
     } finally {
@@ -51,34 +60,37 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center overflow-clip px-6 py-16">
+    <main className="relative mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-16">
       {/* Dekorasi brand yang lembut — konsisten dengan hero di halaman utama. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <span className="absolute -left-24 top-8 h-64 w-64 rounded-full bg-moon-yellow/25 blur-3xl" />
-        <span className="absolute -right-24 bottom-8 h-64 w-64 rounded-full bg-moon-blue/15 blur-3xl" />
-        <span className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-moon-pink/10 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
+        <span className="absolute -left-24 top-1/3 h-72 w-72 rounded-full bg-moon-yellow/20 blur-3xl" />
+        <span className="absolute -right-24 bottom-1/3 h-72 w-72 rounded-full bg-moon-blue/10 blur-3xl" />
+        <span className="absolute left-1/2 top-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-moon-pink/10 blur-3xl" />
       </div>
-      <Card className="relative">
+      <Card className="relative w-full">
         <div className="flex items-center gap-3">
           <BrandMark className="h-12 w-12" />
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-moon-pink">
-              Pendaftaran
+            <p className="text-xs font-semibold uppercase tracking-widest text-moon-ink">
+              Daftar
             </p>
-            <h1 className="text-2xl font-semibold text-moon-ink">
+            <h1 className="text-2xl md:text-3xl font-semibold text-moon-ink">
               Buat Akun Baru
             </h1>
           </div>
         </div>
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm md:text-base text-zinc-500">
           Daftar untuk mulai menghitung estimasi biaya dan memesan cetakan custom Anda.
         </p>
         {/* suppressHydrationWarning: ekstensi browser (password manager dsb.)
             kadang menyentuh DOM form saat autofill. */}
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" suppressHydrationWarning>
-          <label className="text-sm font-medium text-moon-ink">
-            Nama lengkap
+        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4 md:gap-5" suppressHydrationWarning>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="nama" className="text-sm font-medium text-moon-ink">
+              Nama lengkap
+            </label>
             <input
+              id="nama"
               type="text"
               name="name"
               autoComplete="name"
@@ -86,13 +98,17 @@ export default function RegisterPage() {
               value={form.nama}
               onChange={(e) => set("nama", e.target.value)}
               placeholder="Masukkan nama lengkap Anda"
-              className="mt-1 w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
+              className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
               suppressHydrationWarning
             />
-          </label>
-          <label className="text-sm font-medium text-moon-ink">
-            Email
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="email" className="text-sm font-medium text-moon-ink">
+              Email
+            </label>
             <input
+              id="email"
+              ref={emailRef}
               type="email"
               name="email"
               autoComplete="email"
@@ -100,13 +116,16 @@ export default function RegisterPage() {
               value={form.email}
               onChange={(e) => set("email", e.target.value)}
               placeholder="nama@email.com"
-              className="mt-1 w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
+              className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
               suppressHydrationWarning
             />
-          </label>
-          <label className="text-sm font-medium text-moon-ink">
-            No. HP (WhatsApp)
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="no_hp" className="text-sm font-medium text-moon-ink">
+              No. HP (WhatsApp)
+            </label>
             <input
+              id="no_hp"
               type="tel"
               name="tel"
               autoComplete="tel"
@@ -115,13 +134,16 @@ export default function RegisterPage() {
               value={form.no_hp}
               onChange={(e) => set("no_hp", e.target.value)}
               placeholder="08xxxxxxxxxx"
-              className="mt-1 w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
+              className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
               suppressHydrationWarning
             />
-          </label>
-          <label className="text-sm font-medium text-moon-ink">
-            Alamat pengiriman
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="alamat" className="text-sm font-medium text-moon-ink">
+              Alamat pengiriman
+            </label>
             <textarea
+              id="alamat"
               name="street-address"
               autoComplete="street-address"
               required
@@ -129,14 +151,17 @@ export default function RegisterPage() {
               value={form.alamat}
               onChange={(e) => set("alamat", e.target.value)}
               placeholder="Alamat lengkap untuk pengiriman barang"
-              className="mt-1 w-full resize-none rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
+              className="w-full resize-none rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
               suppressHydrationWarning
             />
-          </label>
-          <label className="text-sm font-medium text-moon-ink">
-            Password
-            <span className="relative mt-1 block">
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="password" className="text-sm font-medium text-moon-ink">
+              Password
+            </label>
+            <span className="relative">
               <input
+                id="password"
                 type={showPassword ? "text" : "password"}
                 name="password"
                 autoComplete="new-password"
@@ -166,9 +191,11 @@ export default function RegisterPage() {
                 )}
               </button>
             </span>
-          </label>
+            <p className="mt-1 text-xs text-zinc-500">Minimal 6 karakter</p>
+          </div>
 
           {msg && <ErrorBox>{msg}</ErrorBox>}
+          {successMsg && <SuccessBox>{successMsg}</SuccessBox>}
           <div className="pt-2">
             <PrimaryButton disabled={busy} className="w-full">
               {busy ? "Memproses…" : "Daftar Sekarang"}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { sendPasswordResetEmail } from "firebase/auth";
@@ -26,6 +26,11 @@ export default function LoginPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [resetOk, setResetOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    emailRef.current?.focus();
+  }, []);
 
   // Pengguna yang sesinya masih aktif tidak perlu melihat form login.
   useEffect(() => {
@@ -81,36 +86,40 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center overflow-clip px-6 py-16">
+    <main className="relative mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-16">
       {/* Dekorasi brand yang lembut — konsisten dengan hero di halaman utama. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <span className="absolute -left-24 top-8 h-64 w-64 rounded-full bg-moon-yellow/25 blur-3xl" />
-        <span className="absolute -right-24 bottom-8 h-64 w-64 rounded-full bg-moon-blue/15 blur-3xl" />
-        <span className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-moon-pink/10 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
+        <span className="absolute -left-24 top-1/3 h-72 w-72 rounded-full bg-moon-yellow/20 blur-3xl" />
+        <span className="absolute -right-24 bottom-1/3 h-72 w-72 rounded-full bg-moon-blue/10 blur-3xl" />
+        <span className="absolute left-1/2 top-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-moon-pink/10 blur-3xl" />
       </div>
-      <Card className="relative">
+      <Card className="relative w-full">
         <div className="flex items-center gap-3">
           <BrandMark className="h-12 w-12" />
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-moon-blue">
-              Moon Indie Store
+            <p className="text-xs font-semibold uppercase tracking-widest text-moon-ink">
+              Masuk
             </p>
-            <h1 className="text-2xl font-semibold text-moon-ink">Masuk Akun</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold text-moon-ink">Masuk Akun</h1>
           </div>
         </div>
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm md:text-base text-zinc-500">
           Selamat datang kembali. Silakan masuk untuk melanjutkan.
         </p>
         {/* suppressHydrationWarning: ekstensi browser (password manager dsb.)
             kadang menyentuh DOM form saat autofill. */}
         <form
           onSubmit={onSubmit}
-          className="mt-6 flex flex-col gap-4"
+          className="mt-6 flex flex-col gap-4 md:gap-5"
           suppressHydrationWarning
         >
-          <label className="text-sm font-medium text-moon-ink">
-            Email
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="email" className="text-sm font-medium text-moon-ink">
+              Email
+            </label>
             <input
+              id="email"
+              ref={emailRef}
               type="email"
               name="email"
               autoComplete="email"
@@ -121,11 +130,14 @@ export default function LoginPage() {
               placeholder="nama@email.com"
               suppressHydrationWarning
             />
-          </label>
-          <label className="text-sm font-medium text-moon-ink">
-            Password
-            <span className="relative mt-1 block">
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="password" className="text-sm font-medium text-moon-ink">
+              Password
+            </label>
+            <span className="relative">
               <input
+                id="password"
                 type={showPassword ? "text" : "password"}
                 name="password"
                 autoComplete="current-password"
@@ -154,7 +166,7 @@ export default function LoginPage() {
                 )}
               </button>
             </span>
-          </label>
+          </div>
           <div className="flex justify-end">
             <button
               type="button"

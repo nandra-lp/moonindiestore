@@ -83,7 +83,7 @@ export function DashboardShell({
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Topbar */}
         <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/95 backdrop-blur-sm">
-          <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
+          <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
             {/* Mobile menu trigger */}
             <button
               onClick={() => setDrawer(true)}
@@ -95,10 +95,10 @@ export function DashboardShell({
 
             {/* Page identity */}
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-moon-blue/80">
+              <p className="text-xs font-semibold uppercase tracking-wider text-moon-blue/80">
                 {ROLE_EYEBROW[role]}
               </p>
-              <h1 className="truncate text-base font-semibold text-moon-ink">
+              <h1 className="truncate text-lg font-semibold text-moon-ink">
                 {title}
               </h1>
             </div>

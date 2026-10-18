@@ -81,7 +81,7 @@ export function Card({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_1px_2px_rgba(10,10,10,0.05)] transition-all duration-300 ease-out ${
+      className={`rounded-2xl border border-zinc-200 bg-white p-5 md:p-6 shadow-[0_1px_2px_rgba(10,10,10,0.05)] transition-all duration-300 ease-out ${
         hover ? "hover:shadow-[0_8px_30px_rgba(10,10,10,0.08)] hover:-translate-y-0.5 hover:border-zinc-300" : ""
       } ${className}`}
     >
@@ -132,10 +132,10 @@ export function PageHeader({
       <p className="text-xs font-semibold uppercase tracking-widest text-moon-blue">
         {eyebrow}
       </p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-moon-ink">
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-moon-ink md:text-3xl">
         {title}
       </h1>
-      {desc && <p className="mt-1 text-sm text-zinc-500">{desc}</p>}
+      {desc && <p className="mt-1 text-sm text-zinc-500 md:text-base">{desc}</p>}
     </div>
   );
 }
@@ -188,17 +188,54 @@ export function PrimaryLink({
   );
 }
 
-export function BackLink({ href, children }: { href: string; children: ReactNode }) {
+export function BackLink({
+  href,
+  children,
+  className = "",
+}: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <Link
       href={href}
-      className="group inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white py-1.5 pl-1.5 pr-4 text-sm font-medium text-zinc-600 shadow-sm transition-all duration-200 hover:-translate-x-0.5 hover:border-zinc-300 hover:text-moon-ink hover:shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue"
+      className={`group inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white py-1.5 pl-1.5 pr-4 text-sm font-medium text-zinc-600 shadow-sm transition-all duration-200 hover:-translate-x-0.5 hover:border-zinc-300 hover:text-moon-ink hover:shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue ${className}`}
     >
       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition-colors duration-200 group-hover:bg-moon-yellow group-hover:text-moon-ink">
         <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-px" strokeWidth={2.5} aria-hidden="true" />
       </span>
       {children}
     </Link>
+  );
+}
+
+export function Select({
+  value,
+  onChange,
+  options,
+  className = "",
+  disabled = false,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: { value: string; label: string }[];
+  className?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      className={`w-full rounded-xl border border-zinc-300 px-4 py-3 bg-white text-base transition focus:border-cyan focus:outline-none focus:ring-2 focus:ring-cyan/20 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
   );
 }
 

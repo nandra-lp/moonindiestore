@@ -192,7 +192,7 @@ export function DashboardHero({
         className="absolute -bottom-16 right-24 h-40 w-40 rounded-full bg-moon-blue/25 blur-2xl"
       />
       <span
-        aria-hidden="true"
+aria-hidden="true"
         className="absolute -left-8 bottom-4 h-16 w-16 rounded-full bg-moon-yellow/30 blur-xl"
       />
       <div className="relative flex items-center gap-4 sm:gap-5">
@@ -201,7 +201,7 @@ export function DashboardHero({
           plain
         />
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-moon-yellow sm:text-xs">
+          <p className="text-xs font-semibold uppercase tracking-widest text-moon-yellow">
             {eyebrow}
           </p>
           <h2 className="mt-1 truncate text-xl font-bold tracking-tight sm:text-2xl">

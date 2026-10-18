@@ -63,7 +63,7 @@ function CustomerInner() {
           <div className="mt-2 h-8 w-2/3 rounded-lg bg-zinc-200" />
           <div className="mt-2 h-4 w-1/2 rounded bg-zinc-100" />
           <div className="mt-6 h-24 rounded-2xl bg-zinc-200" />
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
+          <div className="mt-4 grid gap-4 sm:gap-5 sm:grid-cols-2">
             <div className="h-36 rounded-2xl bg-zinc-100" />
             <div className="h-36 rounded-2xl bg-zinc-100" />
           </div>
@@ -113,7 +113,7 @@ function CustomerInner() {
       </Link>
 
       {/* Aksi cepat — aksen brand, konsisten dengan sistem desain */}
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
+      <div className="mt-4 grid gap-4 sm:gap-5 sm:grid-cols-2">
         <Link
           href="/customer/estimasi"
           className="group flex flex-col justify-between rounded-2xl border border-zinc-200 border-t-4 border-t-moon-yellow bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue sm:p-6"

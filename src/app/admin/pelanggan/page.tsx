@@ -86,7 +86,7 @@ function PelangganInner() {
         </div>
       )}
 
-      <h2 className="mt-6 font-semibold text-moon-ink">
+      <h2 className="mt-6 text-lg font-semibold text-moon-ink">
         Role pengguna ({users.length})
       </h2>
       <Card className="mt-2 overflow-hidden !p-0">
@@ -164,7 +164,7 @@ function PelangganInner() {
         </ul>
       </Card>
 
-      <h2 className="mt-8 font-semibold text-moon-ink">
+      <h2 className="mt-8 text-lg font-semibold text-moon-ink">
         Daftar pelanggan ({pelanggan.length})
       </h2>
       <Card className="mt-2 overflow-hidden !p-0">

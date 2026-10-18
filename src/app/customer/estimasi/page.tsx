@@ -162,14 +162,14 @@ function EstimasiInner() {
         )}
       </div>
 
-      <h2 className="mt-8 font-semibold text-moon-ink">
+      <h2 className="mt-8 text-lg font-semibold text-moon-ink">
         Riwayat estimasi ({riwayatLoading ? "…" : riwayat.length})
       </h2>
       {riwayatLoading ? (
         <div
           role="status"
           aria-label="Memuat riwayat estimasi"
-          className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4"
+className="mt-4 grid gap-4 sm:gap-5 sm:grid-cols-2"
         >
           <span className="sr-only">Memuat riwayat estimasi…</span>
           {Array.from({ length: 2 }).map((_, i) => (
@@ -185,7 +185,7 @@ function EstimasiInner() {
           ))}
         </div>
       ) : (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
+        <div className="mt-4 grid gap-4 sm:gap-5 sm:grid-cols-2">
           {riwayat.map((e) => {
             const prod = produkById.get(e.id_produk);
             const nama = prod?.nama_produk ?? `Produk #${e.id_produk.slice(0, 8)}`;

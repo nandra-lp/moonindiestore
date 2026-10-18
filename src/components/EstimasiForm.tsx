@@ -87,7 +87,7 @@ export function EstimasiForm({
         Total = (harga satuan × jumlah) + biaya bahan + biaya produksi.
       </p>
       <form onSubmit={onSubmit}>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="mt-4 grid gap-4 sm:gap-5 sm:grid-cols-2">
           <label className="text-sm font-medium text-moon-ink">
             Produk
             <select
