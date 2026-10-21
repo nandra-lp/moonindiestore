@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/ui";
 import { KatalogPreview } from "@/components/KatalogPreview";
+import { SocialProof } from "@/components/SocialProof";
+import { HowItWorks } from "@/components/HowItWorks";
+import { ClosingCTA } from "@/components/ClosingCTA";
 import { ArrowRight } from "lucide-react";
 
 export default function Home() {
@@ -44,7 +47,13 @@ export default function Home() {
         </div>
       </section>
 
+      <SocialProof />
+
       <KatalogPreview />
+
+      <HowItWorks />
+
+      <ClosingCTA />
     </main>
   );
 }

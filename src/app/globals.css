@@ -57,6 +57,15 @@
   }
 }
 
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Hormati preferensi reduced-motion: matikan animasi mikro navigasi. */
 @media (prefers-reduced-motion: reduce) {
   .animate-slide-down,

@@ -1,7 +1,8 @@
 "use client";
 
-import { BrandMark, Card, ErrorBox, PrimaryLink, BackLink } from "@/components/ui";
+import { BrandMark, Card, ErrorBox, PrimaryLink, BackLink, Badge, roleTone } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { ExternalLink } from "lucide-react";
 
 export default function UnauthorizedPage() {
   const { role, loading } = useAuth();
@@ -21,32 +22,63 @@ export default function UnauthorizedPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-16">
-      <Card className="text-center">
-        <div className="flex justify-center">
-          <BrandMark className="h-12 w-12" />
-        </div>
-        <h1 className="mt-3 text-2xl font-semibold text-moon-ink md:text-3xl">403 — Akses ditolak</h1>
-        <div className="mt-3">
-          <ErrorBox>Role kamu tidak diizinkan membuka halaman ini.</ErrorBox>
+      <div className="relative overflow-hidden" style={{ borderImage: "linear-gradient(to right, #ffed00, #ff006e, #00aeef) 1" }}>
+        {/* Subtle gradient top border */}
+        <div className="absolute inset-0 h-1 bg-gradient-to-r from-moon-yellow via-moon-pink to-moon-blue" aria-hidden="true" />
+        <Card className="text-center relative z-10">
+
+        {/* Hero brand mark - larger with gradient ring */}
+        <div className="relative flex justify-center mb-6">
+          <div className="relative h-20 w-20 rounded-2xl bg-white shadow-lg ring-4 ring-moon-yellow/30 flex items-center justify-center">
+            <BrandMark className="h-16 w-16" plain />
+          </div>
         </div>
 
+        {/* Headline + sub-headline */}
+        <h1 className="text-3xl font-bold tracking-tight text-moon-ink md:text-4xl">Akses Ditolak</h1>
+        <p className="mt-3 text-base text-zinc-600 md:text-lg">
+          Role kamu tidak memiliki izin untuk membuka halaman ini.
+        </p>
+
+        {/* ErrorBox */}
+        <div className="mt-5">
+          <ErrorBox>
+            Akses ditolak untuk role <span className="font-medium">{role ?? "tidak dikenal"}</span>.
+          </ErrorBox>
+        </div>
+
+        {/* Role badge visual */}
         {role && (
-          <p className="mt-2 text-xs text-zinc-500">
-            Role saat ini: <span className="font-medium text-moon-ink">{role}</span>
-          </p>
+          <div className="mt-4 flex justify-center">
+            <Badge tone={roleTone(role)} className="text-sm px-3 py-1">
+              {role}
+            </Badge>
+          </div>
         )}
 
-        <BackLink href={fallbackHref} className="mt-4 w-full">
-          Kembali ke halaman sebelumnya
-        </BackLink>
-        <PrimaryLink href="/dashboard" className="mt-3 w-full">
-          Ke dashboard saya
-        </PrimaryLink>
+        {/* CTA hierarchy - Primary prominent, Secondary as ghost */}
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
+          <PrimaryLink href="/dashboard" className="w-full sm:w-auto min-h-[48px] px-6 text-base">
+            Ke dashboard saya
+          </PrimaryLink>
+          <BackLink href={fallbackHref} className="w-full sm:w-auto justify-center">
+            Kembali
+          </BackLink>
+        </div>
 
-        <p className="mt-4 text-xs text-zinc-500">
-          Butuh akses? <a href="/contact" className="text-moon-blue underline">Hubungi admin</a>
+        {/* Footer guidance - more visible */}
+        <p className="mt-6 text-sm text-zinc-500 flex items-center justify-center gap-1.5">
+          Butuh akses?
+          <a
+            href="/contact"
+            className="inline-flex items-center gap-1 font-medium text-moon-blue hover:text-moon-pink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue"
+          >
+            Hubungi admin
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+          </a>
         </p>
       </Card>
+    </div>
     </main>
   );
 }
