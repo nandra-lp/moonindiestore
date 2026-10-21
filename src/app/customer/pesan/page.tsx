@@ -77,16 +77,30 @@ function PesanInner() {
   }, [idp, firebaseUser]);
 
   useEffect(() => {
-    const param = searchParams.get("estimasi");
-    if (!param || !idp) return;
-    getEstimasi(param)
-      .then((e) => {
-        if (!e || e.id_pelanggan !== idp) return;
-        setEstimasiId(param);
-        setIdProduk(e.id_produk);
-        setJumlah(e.jumlah);
-      })
-      .catch(() => {});
+    const estimasiParam = searchParams.get("estimasi");
+    const produkParam = searchParams.get("produk");
+    
+    if (estimasiParam && idp) {
+      getEstimasi(estimasiParam)
+        .then((e) => {
+          if (!e || e.id_pelanggan !== idp) return;
+          setEstimasiId(estimasiParam);
+          setIdProduk(e.id_produk);
+          setJumlah(e.jumlah);
+        })
+        .catch(() => {});
+    } else if (produkParam && idp) {
+      // Support direct product selection from KatalogPreview
+      listProduk()
+        .then((list) => {
+          const produk = list.find((p) => p.id === produkParam);
+          if (produk) {
+            setIdProduk(produkParam);
+            setJumlah(1);
+          }
+        })
+        .catch(() => {});
+    }
   }, [searchParams, idp]);
 
   function onDesainChange(f: File | null) {
