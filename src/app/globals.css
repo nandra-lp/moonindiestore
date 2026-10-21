@@ -47,6 +47,16 @@
   }
 }
 
+/* Safe area inset utilities untuk iOS notch/Dynamic Island */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 /* Hormati preferensi reduced-motion: matikan animasi mikro navigasi. */
 @media (prefers-reduced-motion: reduce) {
   .animate-slide-down,
