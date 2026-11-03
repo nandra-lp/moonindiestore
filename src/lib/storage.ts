@@ -8,6 +8,8 @@ import { storage } from "@/lib/firebase/config";
 
 export const MAX_GAMBAR_BYTES = 2 * 1024 * 1024; // 2 MB (sama dengan storage.rules)
 export const MAX_DESAIN_BYTES = 10 * 1024 * 1024; // 10 MB (sama dengan storage.rules)
+export const MAX_BUKTI_PEMBAYARAN_BYTES = 5 * 1024 * 1024;
+const TIPE_BUKTI_PEMBAYARAN_OK = ["image/jpeg", "image/png", "image/webp"];
 
 export function validasiGambar(file: File): string | null {
   if (!file.type.startsWith("image/")) return "File harus berupa gambar.";
@@ -24,6 +26,14 @@ export function validasiDesain(file: File): string | null {
   if (!tipeOk) return "Desain harus berupa gambar (JPG/PNG/WebP) atau PDF.";
   if (file.size > MAX_DESAIN_BYTES)
     return "Ukuran file desain maksimal 10 MB.";
+  return null;
+}
+
+export function validasiBuktiPembayaran(file: File): string | null {
+  if (!TIPE_BUKTI_PEMBAYARAN_OK.includes(file.type))
+    return "Bukti pembayaran harus berupa gambar JPG, PNG, atau WebP.";
+  if (file.size > MAX_BUKTI_PEMBAYARAN_BYTES)
+    return "Ukuran bukti pembayaran maksimal 5 MB.";
   return null;
 }
 
@@ -54,6 +64,20 @@ export async function uploadDesainCustom(
   const r = ref(storage, path);
   await uploadBytes(r, file, { contentType: file.type });
   const url = await getDownloadURL(r);
+  return { url, path };
+}
+
+export async function uploadBuktiPembayaran(
+  file: File,
+  orderId: string,
+  uid: string
+): Promise<{ url: string; path: string }> {
+  const err = validasiBuktiPembayaran(file);
+  if (err) throw new Error(err);
+  const path = `bukti-pembayaran/${orderId}/${uid}`;
+  const fileRef = ref(storage, path);
+  await uploadBytes(fileRef, file, { contentType: file.type });
+  const url = await getDownloadURL(fileRef);
   return { url, path };
 }
 

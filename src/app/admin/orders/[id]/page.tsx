@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 import { RequireRole } from "@/components/AuthGuard";
 import { DashboardShell } from "@/components/dashboard/Shell";
-import { AlertCircle, ClipboardList, Factory, Palette, Send, Check, Circle, CheckCircle, MinusCircle, Clock, Package, FileText, MessageCircle, Phone } from "lucide-react";
+import { AlertCircle, ClipboardList, Factory, Palette, Send, Check, Circle, CheckCircle, MinusCircle, Clock, Package, FileText, MessageCircle, Phone, CreditCard } from "lucide-react";
 import {
   addTracking,
   createProduksi,
@@ -17,6 +17,7 @@ import {
   listProduksiByOrder,
   listTrackingByOrder,
   updateOrderStatus,
+  verifyOrderPayment,
   type WithDocId,
 } from "@/lib/db";
 import { COLLECTIONS } from "@/lib/firebase/collections";
@@ -83,6 +84,10 @@ function AdminDetailInner() {
     : whatsappNumber.startsWith("8")
       ? `62${whatsappNumber}`
       : whatsappNumber;
+  const paymentConfirmed =
+    order?.order_siap !== false &&
+    (order?.metode_pembayaran == null ||
+      order.status_pembayaran === "terverifikasi");
 
   function pesanError(err: unknown, konteks: string) {
     setMsg(`${konteks}: ${err instanceof Error ? err.message : "Terjadi kesalahan."}`);
@@ -136,6 +141,10 @@ function AdminDetailInner() {
 
   async function tambahProduksi(status: Produksi["status_produksi"]) {
     if (!id) return;
+    if (!paymentConfirmed) {
+      setMsg("Konfirmasi pembayaran sebelum memulai produksi.");
+      return;
+    }
     setBusy(true);
     setMsg(null);
     try {
@@ -182,6 +191,10 @@ function AdminDetailInner() {
 
   async function tambahTracking() {
     if (!id || !statusTracking) return;
+    if (!paymentConfirmed) {
+      setMsg("Konfirmasi pembayaran sebelum menambahkan tracking.");
+      return;
+    }
     setBusy(true);
     setMsg(null);
     try {
@@ -201,6 +214,20 @@ function AdminDetailInner() {
     }
   }
 
+  async function konfirmasiPembayaran() {
+    if (!order || order.status_pembayaran !== "bukti_dikirim" || busy) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await verifyOrderPayment(order.id);
+      await reload();
+    } catch (err) {
+      pesanError(err, "Gagal mengonfirmasi pembayaran");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function executeHapusOrder() {
     if (!order || busy) return;
     setBusy(true);
@@ -209,6 +236,7 @@ function AdminDetailInner() {
       await Promise.allSettled([
         ...tracking.map((t) => deleteDocById(COLLECTIONS.tracking_order, t.id)),
         ...produksi.map((p) => deleteDocById(COLLECTIONS.produksi, p.id)),
+        hapusFileStorage(order.bukti_pembayaran_path),
         ...detail.map(async (d) => {
           await hapusFileStorage(d.desain_path).catch(() => {});
           await deleteDocById(COLLECTIONS.detail_order, d.id);
@@ -291,6 +319,12 @@ function AdminDetailInner() {
 
       {msg && <ErrorBox>{msg}</ErrorBox>}
 
+      {order.order_siap === false && (
+        <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="status">
+          Pesanan sedang disiapkan customer. Tunggu hingga detailnya selesai dimuat.
+        </p>
+      )}
+
       {/* Order Meta Bar */}
       <div className="rounded-xl border border-zinc-200 bg-cream/50 p-4 md:p-5">
         <dl className="grid gap-3 sm:grid-cols-2 md:grid-cols-5 text-sm">
@@ -345,6 +379,42 @@ function AdminDetailInner() {
           </div>
         </dl>
       </div>
+
+      {order.metode_pembayaran === "bca" && (
+        <section aria-labelledby="payment-heading" className="rounded-xl border border-zinc-200 bg-white p-5 md:p-6">
+          <h2 id="payment-heading" className="flex items-center gap-2 text-lg font-semibold text-ink">
+            <CreditCard className="h-5 w-5 text-zinc-400" aria-hidden="true" />
+            Pembayaran BCA
+          </h2>
+          <p className="mt-2 text-sm text-zinc-600">
+            Status: <strong className="text-ink">{order.status_pembayaran ?? "menunggu"}</strong>
+          </p>
+          {order.bukti_pembayaran_url ? (
+            <a
+              href={order.bukti_pembayaran_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex font-medium text-cyan underline underline-offset-2"
+            >
+              Lihat bukti pembayaran
+            </a>
+          ) : (
+            <p className="mt-3 text-sm text-zinc-500">Customer belum mengirim bukti pembayaran.</p>
+          )}
+          {order.status_pembayaran === "bukti_dikirim" && (
+            <div className="mt-4">
+              <PrimaryButton disabled={busy} onClick={konfirmasiPembayaran}>
+                {busy ? "Memproses…" : "Konfirmasi pembayaran"}
+              </PrimaryButton>
+            </div>
+          )}
+          {order.status_pembayaran === "terverifikasi" && (
+            <p className="mt-3 text-sm font-medium text-green-700">
+              Pembayaran terverifikasi. Produksi dan pengiriman dapat dilanjutkan.
+            </p>
+          )}
+        </section>
+      )}
 
       {/* Main Grid: Progress + Cost */}
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
@@ -498,9 +568,14 @@ function AdminDetailInner() {
               </label>
             </div>
             <div className="flex flex-wrap gap-2 mb-6">
-              <GhostButton disabled={busy} onClick={() => tambahProduksi("berjalan")}>Tandai berjalan</GhostButton>
-              <PrimaryButton disabled={busy} onClick={() => tambahProduksi("selesai")}>Tandai selesai</PrimaryButton>
+              <GhostButton disabled={busy || !paymentConfirmed} onClick={() => tambahProduksi("berjalan")}>Tandai berjalan</GhostButton>
+              <PrimaryButton disabled={busy || !paymentConfirmed} onClick={() => tambahProduksi("selesai")}>Tandai selesai</PrimaryButton>
             </div>
+            {!paymentConfirmed && (
+              <p className="mb-5 text-sm text-zinc-500">
+                Produksi dan tracking dikunci sampai admin mengonfirmasi pembayaran customer.
+              </p>
+            )}
 
             <div className="my-4 border-t border-zinc-100" aria-hidden="true" />
 
@@ -518,8 +593,9 @@ function AdminDetailInner() {
                 placeholder="cth: Paket diserahkan ke kurir"
                 aria-label="Status tracking manual"
                 className="w-full rounded-xl border border-zinc-300 px-3 py-2 text-sm bg-white transition focus:border-cyan focus:outline-none focus:ring-2 focus:ring-cyan/20"
+                disabled={!paymentConfirmed}
               />
-              <PrimaryButton disabled={busy || !statusTracking} onClick={tambahTracking} className="shrink-0">Kirim</PrimaryButton>
+              <PrimaryButton disabled={busy || !paymentConfirmed || !statusTracking} onClick={tambahTracking} className="shrink-0">Kirim</PrimaryButton>
             </div>
           </div>
         </section>
@@ -538,7 +614,12 @@ function AdminDetailInner() {
               {STATUS_ORDERS.map((s) => (
                 <button
                   key={s}
-                  disabled={busy || order.status_order === s}
+                  disabled={
+                    busy ||
+                    order.order_siap === false ||
+                    order.status_order === s ||
+                    (!paymentConfirmed && !["menunggu", "diproses", "dibatalkan"].includes(s))
+                  }
                   onClick={async () => {
                     setBusy(true);
                     setMsg(null);

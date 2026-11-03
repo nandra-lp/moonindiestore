@@ -7,20 +7,23 @@ import { RequireRole } from "@/components/AuthGuard";
 import { DashboardShell } from "@/components/dashboard/Shell";
 import { useAuth } from "@/context/AuthContext";
 import {
+  createOrderDetailsAndTrackingBatch,
+  createOrderWithId,
+  deleteDocById,
   generateOrderId,
-  createOrderWithDetailsBatch,
   getEstimasi,
   getPelanggan,
   listProduk,
   type WithDocId,
 } from "@/lib/db";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 import {
   MAX_DESAIN_BYTES,
   hapusFileStorage,
   uploadDesainCustom,
 } from "@/lib/storage";
 import { formatRupiah } from "@/lib/estimasi";
-import type { Produk } from "@/types/firestore";
+import type { PaymentMethod, Produk } from "@/types/firestore";
 import {
   BackLink,
   Card,
@@ -46,6 +49,7 @@ function PesanInner() {
   const [desainFile, setDesainFile] = useState<File | null>(null);
   const [desainPreview, setDesainPreview] = useState<string | null>(null);
   const [catatanDesain, setCatatanDesain] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bca");
   const [linkage, setLinkage] = useState<null | { ok: boolean; info: string }>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -126,6 +130,10 @@ function PesanInner() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!firebaseUser) {
+      setMsg("Sesi login belum termuat. Muat ulang halaman, lalu coba lagi.");
+      return;
+    }
     if (!idp) {
       setMsg("Profil pelanggan belum termuat. Muat ulang halaman.");
       return;
@@ -148,29 +156,41 @@ function PesanInner() {
       const newOrderId = generateOrderId();
       orderId = newOrderId;
 
-      let desain_url: string | null = null;
-      let desain_path: string | null = null;
-      if (desainFile) {
-        const up = await langkah("mengunggah desain", () =>
-          uploadDesainCustom(desainFile, newOrderId)
-        );
-        desain_url = up.url;
-        desain_path = up.path;
-        desainPaths.push(up.path);
-      }
+      const newOrder = {
+        id_pelanggan: idp,
+        uid_pelanggan: firebaseUser.uid,
+        order_siap: false,
+        tgl_order: Timestamp.now(),
+        total_harga: total,
+        status_order: "menunggu" as const,
+        metode_pembayaran: paymentMethod,
+        status_pembayaran: "menunggu" as const,
+        bukti_pembayaran_url: null,
+        bukti_pembayaran_path: null,
+        waktu_pembayaran: null,
+        estimasi_selesai: null,
+        id_estimasi: estimasiId,
+      };
+
+      await langkah("membuat pesanan", () =>
+        createOrderWithId(newOrderId, newOrder)
+      );
 
       try {
+        let desain_url: string | null = null;
+        let desain_path: string | null = null;
+        if (desainFile) {
+          const up = await langkah("mengunggah desain", () =>
+            uploadDesainCustom(desainFile, newOrderId)
+          );
+          desain_url = up.url;
+          desain_path = up.path;
+          desainPaths.push(up.path);
+        }
+
         await langkah("menyimpan pesanan ke database", () =>
-          createOrderWithDetailsBatch(
+          createOrderDetailsAndTrackingBatch(
             newOrderId,
-            {
-              id_pelanggan: idp,
-              tgl_order: Timestamp.now(),
-              total_harga: total,
-              status_order: "menunggu",
-              estimasi_selesai: null,
-              id_estimasi: estimasiId,
-            },
             {
               id_produk: produk.id,
               jumlah,
@@ -189,7 +209,10 @@ function PesanInner() {
           )
         );
       } catch (inner) {
-        await Promise.allSettled(desainPaths.map((p) => hapusFileStorage(p)));
+        await Promise.all([
+          ...desainPaths.map((p) => hapusFileStorage(p)),
+          deleteDocById(COLLECTIONS.orders, newOrderId),
+        ]);
         throw inner;
       }
 
@@ -398,6 +421,31 @@ function PesanInner() {
                       disabled={!produk}
                     />
                   </label>
+                </section>
+
+                <section aria-labelledby="payment-heading" className="space-y-4 border-t border-zinc-100 pt-6">
+                  <h3 id="payment-heading" className="text-base font-semibold text-ink">
+                    Metode pembayaran
+                  </h3>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gold bg-gold/10 p-4">
+                    <input
+                      type="radio"
+                      name="metode-pembayaran"
+                      value="bca"
+                      checked={paymentMethod === "bca"}
+                      onChange={() => setPaymentMethod("bca")}
+                      className="mt-1 accent-ink"
+                    />
+                    <span>
+                      <span className="block font-semibold text-ink">Transfer BCA</span>
+                      <span className="mt-1 block text-sm text-zinc-600">
+                        4750477785 a.n. Rafsan Jani
+                      </span>
+                    </span>
+                  </label>
+                  <p className="text-sm text-zinc-500">
+                    GoPay dan QRIS belum tersedia. Tunggu admin mengonfirmasi pesanan dan total akhir sebelum melakukan transfer.
+                  </p>
                 </section>
 
                 {/* Linkage Status */}

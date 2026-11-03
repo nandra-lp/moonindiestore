@@ -79,6 +79,83 @@ service cloud.firestore {
           && getAfter(orderPath).data.status_order == 'menunggu');
     }
 
+    function orderPaid(orderId) {
+      let orderPath = /databases/$(database)/documents/orders/$(orderId);
+      return exists(orderPath)
+        && (get(orderPath).data.get('metode_pembayaran', null) == null
+          || get(orderPath).data.get('status_pembayaran', 'menunggu') == 'terverifikasi');
+    }
+
+    function orderPaidAfter(orderId) {
+      let orderPath = /databases/$(database)/documents/orders/$(orderId);
+      return (existsAfter(orderPath)
+          && (getAfter(orderPath).data.get('metode_pembayaran', null) == null
+            || getAfter(orderPath).data.get('status_pembayaran', 'menunggu') == 'terverifikasi'))
+        || (exists(orderPath)
+          && (get(orderPath).data.get('metode_pembayaran', null) == null
+            || get(orderPath).data.get('status_pembayaran', 'menunggu') == 'terverifikasi'));
+    }
+
+    function orderReadyAfter(orderId) {
+      let orderPath = /databases/$(database)/documents/orders/$(orderId);
+      return (existsAfter(orderPath)
+          && getAfter(orderPath).data.get('order_siap', true) == true)
+        || (exists(orderPath)
+          && get(orderPath).data.get('order_siap', true) == true);
+    }
+
+    function customerCompleteOrderSetup() {
+      return isCustomer()
+        && customerEmailVerified()
+        && pelangganMilikSaya(resource.data.id_pelanggan)
+        && resource.data.uid_pelanggan == myUid()
+        && resource.data.order_siap == false
+        && request.resource.data.order_siap == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'order_siap',
+          'updatedAt'
+        ]);
+    }
+
+    function customerSubmitPaymentProof(orderId) {
+      return isCustomer()
+        && customerEmailVerified()
+        && pelangganMilikSaya(resource.data.id_pelanggan)
+        && resource.data.get('uid_pelanggan', null) == myUid()
+        && resource.data.get('order_siap', true) == true
+        && resource.data.get('metode_pembayaran', null) == 'bca'
+        && resource.data.status_order == 'diproses'
+        && resource.data.get('status_pembayaran', null) in ['menunggu', 'bukti_dikirim']
+        && request.resource.data.status_pembayaran == 'bukti_dikirim'
+        && request.resource.data.bukti_pembayaran_path
+          == 'bukti-pembayaran/' + orderId + '/' + myUid()
+        && request.resource.data.get('bukti_pembayaran_url', null) is string
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status_pembayaran',
+          'bukti_pembayaran_url',
+          'bukti_pembayaran_path',
+          'updatedAt'
+        ]);
+    }
+
+    function adminOrderUpdate(orderId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return isAdmin()
+        && resource.data.get('order_siap', true) == true
+        && (orderPaid(orderId)
+          || request.resource.data.status_order in ['menunggu', 'diproses', 'dibatalkan'])
+        && (!changed.hasAny(['status_pembayaran'])
+          || (resource.data.get('status_pembayaran', null) == 'bukti_dikirim'
+            && request.resource.data.status_pembayaran == 'terverifikasi'
+            && request.resource.data.bukti_pembayaran_path
+              == resource.data.bukti_pembayaran_path
+            && changed.hasOnly([
+              'status_pembayaran',
+              'waktu_pembayaran',
+              'updatedAt'
+            ])));
+    }
+
     match /users/{uid} {
       allow read: if signedIn() && (myUid() == uid || isAdmin());
       allow create: if signedIn()
@@ -119,8 +196,17 @@ service cloud.firestore {
       allow create: if isAdmin()
         || (isCustomer()
           && customerEmailVerified()
-          && pelangganMilikSaya(request.resource.data.id_pelanggan));
-      allow update: if isAdmin();
+          && pelangganMilikSaya(request.resource.data.id_pelanggan)
+          && request.resource.data.uid_pelanggan == myUid()
+          && request.resource.data.order_siap == false
+          && request.resource.data.metode_pembayaran == 'bca'
+          && request.resource.data.status_pembayaran == 'menunggu'
+          && request.resource.data.bukti_pembayaran_url == null
+          && request.resource.data.bukti_pembayaran_path == null
+          && request.resource.data.waktu_pembayaran == null);
+      allow update: if adminOrderUpdate(id)
+        || customerCompleteOrderSetup()
+        || customerSubmitPaymentProof(id);
       allow delete: if isAdmin()
         || (orderMilikCustomerWrite(id)
           && resource.data.status_order == 'menunggu');
@@ -133,7 +219,8 @@ service cloud.firestore {
           && orderMilikCustomerRead(resource.data.id_order));
       allow create: if isAdmin()
         || (orderMilikCustomerWrite(request.resource.data.id_order)
-          && orderMenungguAfter(request.resource.data.id_order));
+          && orderMenungguAfter(request.resource.data.id_order)
+          && orderReadyAfter(request.resource.data.id_order));
       allow update: if isAdmin();
       allow delete: if isAdmin()
         || (orderMilikCustomerWrite(resource.data.id_order)
@@ -145,7 +232,9 @@ service cloud.firestore {
         || isOwner()
         || (isCustomer()
           && orderMilikCustomerRead(resource.data.id_order));
-      allow create, update, delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && orderPaidAfter(request.resource.data.id_order);
+      allow delete: if isAdmin();
     }
 
     match /tracking_order/{id} {
@@ -153,9 +242,11 @@ service cloud.firestore {
         || isOwner()
         || (isCustomer()
           && orderMilikCustomerRead(resource.data.id_order));
-      allow create: if isAdmin()
+      allow create: if (isAdmin()
+          && orderPaidAfter(request.resource.data.id_order))
         || (orderMilikCustomerWrite(request.resource.data.id_order)
           && orderMenungguAfter(request.resource.data.id_order)
+          && orderReadyAfter(request.resource.data.id_order)
           && request.resource.data.status == 'Order dibuat');
       allow update: if isAdmin();
       allow delete: if isAdmin()
@@ -172,7 +263,14 @@ service cloud.firestore {
       allow create: if isAdmin()
         || (isCustomer()
           && customerEmailVerified()
-          && pelangganMilikSaya(request.resource.data.id_pelanggan));
+          && pelangganMilikSaya(request.resource.data.id_pelanggan)
+          && request.resource.data.uid_pelanggan == myUid()
+          && request.resource.data.status_order == 'menunggu'
+          && request.resource.data.metode_pembayaran == 'bca'
+          && request.resource.data.status_pembayaran == 'menunggu'
+          && request.resource.data.bukti_pembayaran_url == null
+          && request.resource.data.bukti_pembayaran_path == null
+          && request.resource.data.waktu_pembayaran == null);
       allow update, delete: if isAdmin();
     }
   }

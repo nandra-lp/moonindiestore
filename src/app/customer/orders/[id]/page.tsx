@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { RequireRole } from "@/components/AuthGuard";
 import { DashboardShell } from "@/components/dashboard/Shell";
@@ -12,10 +12,16 @@ import {
   listDetailByOrder,
   listProduksiByOrder,
   listTrackingByOrder,
+  submitPaymentProof,
   type WithDocId,
 } from "@/lib/db";
 import { COLLECTIONS } from "@/lib/firebase/collections";
-import { hapusFileStorage } from "@/lib/storage";
+import {
+  hapusFileStorage,
+  MAX_BUKTI_PEMBAYARAN_BYTES,
+  uploadBuktiPembayaran,
+  validasiBuktiPembayaran,
+} from "@/lib/storage";
 import { formatRupiah, formatTanggal, hitungProgresProduksi, LABEL_TAHAP, TAHAP_PRODUKSI } from "@/lib/estimasi";
 import type {
   DetailOrder,
@@ -27,13 +33,13 @@ import type {
 import { BackLink, Badge, DangerButton, orderTone } from "@/components/ui";
 import { DesainCustomView } from "@/components/ui";
 import { useProdukMap } from "@/hooks/useLookup";
-import { Check, AlertCircle, Clock, Package, FileText, Circle, CheckCircle, MinusCircle } from "lucide-react";
+import { Check, AlertCircle, Clock, Package, FileText, Circle, CheckCircle, MinusCircle, CreditCard, Upload } from "lucide-react";
 
 function DetailInner() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, firebaseUser } = useAuth();
   const [order, setOrder] = useState<WithDocId<Order> | null>(null);
   const [detail, setDetail] = useState<WithDocId<DetailOrder>[]>([]);
   const [produksi, setProduksi] = useState<WithDocId<Produksi>[]>([]);
@@ -42,6 +48,9 @@ function DetailInner() {
   const [denied, setDenied] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [proofError, setProofError] = useState<string | null>(null);
   const namaProduk = useProdukMap();
 
   useEffect(() => {
@@ -84,6 +93,7 @@ function DetailInner() {
           await hapusFileStorage(d.desain_path).catch(() => {});
           await deleteDocById(COLLECTIONS.detail_order, d.id);
         }),
+        hapusFileStorage(order.bukti_pembayaran_path),
       ]);
       await deleteDocById(COLLECTIONS.orders, order.id);
       router.push("/customer/orders");
@@ -91,6 +101,39 @@ function DetailInner() {
       setCancelError(err instanceof Error ? err.message : "Gagal membatalkan pesanan.");
     } finally {
       setCancelling(false);
+    }
+  }
+
+  async function kirimBuktiPembayaran(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!order || !proofFile || !firebaseUser || uploadingProof) return;
+
+    const validationError = validasiBuktiPembayaran(proofFile);
+    if (validationError) {
+      setProofError(validationError);
+      return;
+    }
+
+    setUploadingProof(true);
+    setProofError(null);
+    const form = event.currentTarget;
+    try {
+      const proof = await uploadBuktiPembayaran(proofFile, order.id, firebaseUser.uid);
+      await submitPaymentProof(order.id, proof);
+      setOrder({
+        ...order,
+        status_pembayaran: "bukti_dikirim",
+        bukti_pembayaran_url: proof.url,
+        bukti_pembayaran_path: proof.path,
+      });
+      setProofFile(null);
+      form.reset();
+    } catch (err) {
+      setProofError(
+        err instanceof Error ? err.message : "Gagal mengirim bukti pembayaran."
+      );
+    } finally {
+      setUploadingProof(false);
     }
   }
 
@@ -188,6 +231,100 @@ function DetailInner() {
           </div>
         </dl>
       </div>
+
+      {order.metode_pembayaran === "bca" && (
+        <section aria-labelledby="payment-heading" className="rounded-xl border border-zinc-200 bg-white p-5 md:p-6">
+          <h2 id="payment-heading" className="flex items-center gap-2 text-lg font-semibold text-ink">
+            <CreditCard className="h-5 w-5 text-zinc-400" aria-hidden="true" />
+            Pembayaran BCA
+          </h2>
+          {order.status_pembayaran === "terverifikasi" ? (
+            <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm font-medium text-green-700">
+              Pembayaran telah dikonfirmasi admin. Pesanan dapat dilanjutkan.
+            </p>
+          ) : order.status_order === "dibatalkan" ? (
+            <p className="mt-3 rounded-lg bg-zinc-100 p-3 text-sm text-zinc-600">
+              Pesanan dibatalkan. Jangan melakukan transfer untuk pesanan ini.
+            </p>
+          ) : order.status_order !== "diproses" ? (
+            <p className="mt-3 text-sm text-zinc-600">
+              Menunggu admin meninjau pesanan dan mengonfirmasi total akhir. Silakan transfer dan unggah bukti setelah status pesanan berubah menjadi <strong>diproses</strong>.
+            </p>
+          ) : (
+            <>
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <dt className="text-sm text-zinc-500">Bank</dt>
+                  <dd className="font-medium text-ink">BCA</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-zinc-500">Nomor rekening</dt>
+                  <dd className="font-mono font-semibold text-ink">4750477785</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-zinc-500">Atas nama</dt>
+                  <dd className="font-medium text-ink">Rafsan Jani</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-zinc-500">Total</dt>
+                  <dd className="font-mono font-semibold text-ink">{formatRupiah(order.total_harga)}</dd>
+                </div>
+              </dl>
+              <p className="mt-3 text-sm text-zinc-600">
+                Transfer sesuai total yang sudah dikonfirmasi admin. Setelah itu, unggah bukti untuk diperiksa sebelum pesanan dilanjutkan.
+              </p>
+
+              {order.bukti_pembayaran_url && (
+                <p className="mt-3 text-sm">
+                  <a
+                    href={order.bukti_pembayaran_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-cyan underline underline-offset-2"
+                  >
+                    Lihat bukti pembayaran yang dikirim
+                  </a>
+                  {order.status_pembayaran === "bukti_dikirim" && (
+                    <span className="ml-2 text-zinc-500">Menunggu pemeriksaan admin.</span>
+                  )}
+                </p>
+              )}
+
+              <form onSubmit={kirimBuktiPembayaran} className="mt-5 space-y-3">
+                <label className="block text-sm font-medium text-ink" htmlFor="payment-proof">
+                  {order.status_pembayaran === "bukti_dikirim" ? "Ganti bukti pembayaran" : "Unggah bukti pembayaran"}
+                </label>
+                <input
+                  id="payment-proof"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    setProofFile(event.target.files?.[0] ?? null);
+                    setProofError(null);
+                  }}
+                  className="block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-cream file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-gold/20"
+                  disabled={uploadingProof}
+                  required
+                />
+                <p className="text-xs text-zinc-500">
+                  JPG, PNG, atau WebP, maksimal {(MAX_BUKTI_PEMBAYARAN_BYTES / 1024 / 1024).toFixed(0)} MB.
+                </p>
+                {proofError && (
+                  <p className="text-sm text-magenta" role="alert">{proofError}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={uploadingProof || !proofFile}
+                  className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  {uploadingProof ? "Mengunggah…" : "Kirim bukti"}
+                </button>
+              </form>
+            </>
+          )}
+        </section>
+      )}
 
       {/* Main Grid: Progress + Cost */}
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">

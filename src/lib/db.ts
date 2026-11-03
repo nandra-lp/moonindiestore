@@ -14,6 +14,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  Timestamp,
   updateDoc,
   where,
   writeBatch,
@@ -211,6 +212,38 @@ export async function updateOrderStatus(
   });
 }
 
+export async function submitPaymentProof(
+  id_order: string,
+  proof: { url: string; path: string }
+) {
+  await updateDoc(doc(db, COLLECTIONS.orders, id_order), {
+    status_pembayaran: "bukti_dikirim",
+    bukti_pembayaran_url: proof.url,
+    bukti_pembayaran_path: proof.path,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function verifyOrderPayment(id_order: string) {
+  const batch = writeBatch(db);
+  const orderRef = doc(db, COLLECTIONS.orders, id_order);
+  const trackingRef = doc(collection(db, COLLECTIONS.tracking_order));
+
+  batch.update(orderRef, {
+    status_pembayaran: "terverifikasi",
+    waktu_pembayaran: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  batch.set(trackingRef, {
+    id_tracking: trackingRef.id,
+    id_order,
+    status: "Pembayaran terverifikasi",
+    waktu: Timestamp.now(),
+    keterangan: "Admin telah mengonfirmasi pembayaran.",
+  });
+  await batch.commit();
+}
+
 // ---------- DETAIL_ORDER ----------
 export async function listDetailByOrder(id_order: string) {
   return listBy<DetailOrder>(COLLECTIONS.detail_order, [
@@ -334,24 +367,31 @@ export function generateOrderId() {
   return doc(collection(db, COLLECTIONS.orders)).id;
 }
 
-export async function createOrderWithDetailsBatch(
+export async function createOrderWithId(
   orderId: string,
-  orderData: Omit<Order, "id_order" | "createdAt" | "updatedAt">,
-  detailData: Omit<DetailOrder, "id_detail" | "id_order">,
-  trackingData: Omit<TrackingOrder, "id_tracking" | "id_order">
+  orderData: Omit<Order, "id_order" | "createdAt" | "updatedAt">
 ) {
-  const batch = writeBatch(db);
-  
-  const orderRef = doc(db, COLLECTIONS.orders, orderId);
-  const detailRef = doc(collection(db, COLLECTIONS.detail_order));
-  const trackingRef = doc(collection(db, COLLECTIONS.tracking_order));
-
-  batch.set(orderRef, {
+  await setDoc(doc(db, COLLECTIONS.orders, orderId), {
     ...orderData,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+}
 
+export async function createOrderDetailsAndTrackingBatch(
+  orderId: string,
+  detailData: Omit<DetailOrder, "id_detail" | "id_order">,
+  trackingData: Omit<TrackingOrder, "id_tracking" | "id_order">
+) {
+  const batch = writeBatch(db);
+  const detailRef = doc(collection(db, COLLECTIONS.detail_order));
+  const trackingRef = doc(collection(db, COLLECTIONS.tracking_order));
+  const orderRef = doc(db, COLLECTIONS.orders, orderId);
+
+  batch.update(orderRef, {
+    order_siap: true,
+    updatedAt: serverTimestamp(),
+  });
   batch.set(detailRef, {
     ...detailData,
     id_order: orderId,

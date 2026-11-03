@@ -18,6 +18,8 @@ export type StatusOrder =
   | "dibatalkan";
 
 export type StatusProduksi = "antri" | "berjalan" | "selesai" | "gagal";
+export type PaymentMethod = "bca" | "gopay" | "qris";
+export type PaymentStatus = "menunggu" | "bukti_dikirim" | "terverifikasi";
 
 // Dokumen identitas/login + role. Satu user Firebase Auth = satu dokumen di sini.
 // id dokumen = Firebase Auth uid.
@@ -65,9 +67,16 @@ export interface Produk {
 export interface Order {
   id_order: string; // doc id
   id_pelanggan: string; // FK -> Pelanggan.id_pelanggan
+  uid_pelanggan?: string; // Firebase Auth UID snapshot for secure Storage access
+  order_siap?: boolean;
   tgl_order: Timestamp;
   total_harga: number;
   status_order: StatusOrder;
+  metode_pembayaran?: PaymentMethod;
+  status_pembayaran?: PaymentStatus;
+  bukti_pembayaran_url?: string | null;
+  bukti_pembayaran_path?: string | null;
+  waktu_pembayaran?: Timestamp | null;
   estimasi_selesai: Timestamp | null;
   // FK opsional -> PerkiraanHarga. Diisi bila order dibuat dari estimasi
   // (via /customer/pesan?estimasi=<id>). Order lama tanpa field ini tetap valid.

@@ -1,349 +1,92 @@
-
 rules_version = '2';
 
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    // ==========================================
-    // AUTHENTICATION & ROLE
-    // ==========================================
-
+service firebase.storage {
+  match /b/{bucket}/o {
     function signedIn() {
       return request.auth != null;
     }
 
-    function myUid() {
-      return request.auth.uid;
+    function userData() {
+      return firestore.get(
+        /databases/(default)/documents/users/$(request.auth.uid)
+      ).data;
     }
 
-    function myRole() {
+    function hasRole(role) {
+      return signedIn() && userData().role == role;
+    }
+
+    function customerEmailVerified() {
       return signedIn()
-        && exists(
-          /databases/$(database)/documents/users/$(myUid())
-        )
-        ? get(
-            /databases/$(database)/documents/users/$(myUid())
-          ).data.role
-        : null;
+        && (userData().get('requires_email_verification', false) != true
+          || request.auth.token.email_verified == true);
     }
 
-    function isAdmin() {
-      return myRole() == 'admin';
+    function customerOwnsOrder(orderId) {
+      return hasRole('customer')
+        && customerEmailVerified()
+        && firestore.get(
+          /databases/(default)/documents/orders/$(orderId)
+        ).data.uid_pelanggan == request.auth.uid;
     }
 
-    function isOwner() {
-      return myRole() == 'owner';
+    function orderIsWaiting(orderId) {
+      return firestore.get(
+        /databases/(default)/documents/orders/$(orderId)
+      ).data.status_order == 'menunggu';
     }
 
-    function isCustomer() {
-      return myRole() == 'customer';
+    function paymentCanBeSubmitted(orderId) {
+      let order = firestore.get(
+        /databases/(default)/documents/orders/$(orderId)
+      ).data;
+      return order.metode_pembayaran == 'bca'
+        && order.status_order == 'diproses'
+        && order.status_pembayaran in ['menunggu', 'bukti_dikirim'];
     }
 
-    // ==========================================
-    // CUSTOMER OWNERSHIP
-    // ==========================================
-
-    function pelangganMilikSaya(idPelanggan) {
-      return signedIn()
-        && idPelanggan is string
-        && exists(
-          /databases/$(database)/documents/pelanggan/$(idPelanggan)
-        )
-        && get(
-          /databases/$(database)/documents/pelanggan/$(idPelanggan)
-        ).data.uid == myUid();
+    function validDesignUpload() {
+      return request.resource.size <= 10 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/pdf');
     }
 
-    // Membaca order milik customer.
-    function orderMilikCustomerRead(orderId) {
-      let orderPath =
-        /databases/$(database)/documents/orders/$(orderId);
-
-      return isCustomer()
-        && exists(orderPath)
-        && pelangganMilikSaya(
-          get(orderPath).data.id_pelanggan
-        );
+    function validPaymentProofUpload() {
+      return request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
 
-    // Mendukung order yang dibuat dalam batch write.
-    function orderMilikCustomerWrite(orderId) {
-      let orderPath =
-        /databases/$(database)/documents/orders/$(orderId);
-
-      return isCustomer()
-        && (
-          (
-            exists(orderPath)
-            && pelangganMilikSaya(
-              get(orderPath).data.id_pelanggan
-            )
-          )
-          ||
-          (
-            existsAfter(orderPath)
-            && pelangganMilikSaya(
-              getAfter(orderPath).data.id_pelanggan
-            )
-          )
-        );
-    }
-
-    // ==========================================
-    // ORDER STATUS VALIDATION
-    // ==========================================
-
-    function orderMenunggu(orderId) {
-      let orderPath =
-        /databases/$(database)/documents/orders/$(orderId);
-
-      return exists(orderPath)
-        && get(orderPath).data.status_order == 'menunggu';
-    }
-
-    function orderMenungguAfter(orderId) {
-      let orderPath =
-        /databases/$(database)/documents/orders/$(orderId);
-
-      return (
-        exists(orderPath)
-        && get(orderPath).data.status_order == 'menunggu'
-      )
-      ||
-      (
-        existsAfter(orderPath)
-        && getAfter(orderPath).data.status_order == 'menunggu'
-      );
-    }
-
-    // ==========================================
-    // USERS
-    // ==========================================
-
-    match /users/{uid} {
-
-      allow read: if signedIn()
-        && (
-          myUid() == uid
-          || isAdmin()
-        );
-
-      // Registrasi hanya untuk customer.
-      allow create: if signedIn()
-        && myUid() == uid
-        && request.resource.data.role == 'customer'
-        && request.resource.data.uid == myUid();
-
-      // Role hanya dapat dikelola admin.
-      allow update, delete: if isAdmin();
-    }
-
-    // ==========================================
-    // PELANGGAN
-    // ==========================================
-
-    match /pelanggan/{id} {
-
-      allow read: if isAdmin()
-        || isOwner()
-        || (
-          isCustomer()
-          && resource.data.uid == myUid()
-        );
-
-      allow create: if isAdmin()
-        || (
-          isCustomer()
-          && request.resource.data.uid == myUid()
-        );
-
-      // Customer tidak dapat mengganti kepemilikan UID.
-      allow update: if isAdmin()
-        || (
-          isCustomer()
-          && resource.data.uid == myUid()
-          && request.resource.data.uid == myUid()
-        );
-
-      allow delete: if isAdmin();
-    }
-
-    // ==========================================
-    // PRODUK
-    // ==========================================
-
-    match /produk/{id} {
-
+    match /produk/{fileName} {
       allow read: if true;
-
-      allow create, update, delete: if isAdmin();
+      allow create, update: if hasRole('admin')
+        && request.resource.size <= 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if hasRole('admin');
     }
 
-    // ==========================================
-    // ORDERS
-    // ==========================================
-
-    match /orders/{id} {
-
-      allow read: if isAdmin()
-        || isOwner()
-        || (
-          isCustomer()
-          && pelangganMilikSaya(
-            resource.data.id_pelanggan
-          )
-        );
-
-      // Customer hanya boleh membuat order menunggu.
-      allow create: if isAdmin()
-        || (
-          isCustomer()
-          && pelangganMilikSaya(
-            request.resource.data.id_pelanggan
-          )
-          && request.resource.data.status_order == 'menunggu'
-        );
-
-      // Perubahan order hanya admin.
-      allow update: if isAdmin();
-
-      // Penghapusan permanen hanya admin.
-      allow delete: if isAdmin();
+    match /desain/{orderId}/{fileName} {
+      allow read: if hasRole('admin')
+        || hasRole('owner')
+        || customerOwnsOrder(orderId);
+      allow create, update: if customerOwnsOrder(orderId)
+        && orderIsWaiting(orderId)
+        && validDesignUpload();
+      allow delete: if hasRole('admin')
+        || (customerOwnsOrder(orderId) && orderIsWaiting(orderId));
     }
 
-    // ==========================================
-    // DETAIL ORDER
-    // ==========================================
-
-    match /detail_order/{id} {
-
-      allow read: if isAdmin()
-        || isOwner()
-        || (
-          isCustomer()
-          && orderMilikCustomerRead(
-            resource.data.id_order
-          )
-        );
-
-      // Customer dapat membuat detail order
-      // pada order miliknya yang masih menunggu.
-      allow create: if isAdmin()
-        || (
-          request.resource.data.id_order is string
-          && orderMilikCustomerWrite(
-            request.resource.data.id_order
-          )
-          && orderMenungguAfter(
-            request.resource.data.id_order
-          )
-        );
-
-      allow update: if isAdmin();
-
-      allow delete: if isAdmin()
-        || (
-          orderMilikCustomerWrite(
-            resource.data.id_order
-          )
-          && orderMenunggu(
-            resource.data.id_order
-          )
-        );
+    match /bukti-pembayaran/{orderId}/{uid} {
+      allow read: if hasRole('admin')
+        || hasRole('owner')
+        || (request.auth.uid == uid && customerOwnsOrder(orderId));
+      allow create, update: if request.auth.uid == uid
+        && customerOwnsOrder(orderId)
+        && paymentCanBeSubmitted(orderId)
+        && validPaymentProofUpload();
+      allow delete: if hasRole('admin');
     }
 
-    // ==========================================
-    // PRODUKSI
-    // ==========================================
-
-    match /produksi/{id} {
-
-      allow read: if isAdmin()
-        || isOwner()
-        || (
-          isCustomer()
-          && orderMilikCustomerRead(
-            resource.data.id_order
-          )
-        );
-
-      // Pengelolaan produksi oleh admin.
-      allow create, update, delete: if isAdmin();
-    }
-
-    // ==========================================
-    // TRACKING ORDER
-    // ==========================================
-
-    match /tracking_order/{id} {
-
-      allow read: if isAdmin()
-        || isOwner()
-        || (
-          isCustomer()
-          && orderMilikCustomerRead(
-            resource.data.id_order
-          )
-        );
-
-      // Customer hanya dapat membuat tracking awal.
-      allow create: if isAdmin()
-        || (
-          request.resource.data.id_order is string
-          && orderMilikCustomerWrite(
-            request.resource.data.id_order
-          )
-          && orderMenungguAfter(
-            request.resource.data.id_order
-          )
-          && request.resource.data.status == 'Order dibuat'
-        );
-
-      // Pembaruan tracking hanya admin.
-      allow update: if isAdmin();
-
-      allow delete: if isAdmin()
-        || (
-          orderMilikCustomerWrite(
-            resource.data.id_order
-          )
-          && orderMenunggu(
-            resource.data.id_order
-          )
-        );
-    }
-
-    // ==========================================
-    // PERKIRAAN HARGA
-    // ==========================================
-
-    match /perkiraan_harga/{id} {
-
-      allow read: if isAdmin()
-        || isOwner()
-        || (
-          isCustomer()
-          && pelangganMilikSaya(
-            resource.data.id_pelanggan
-          )
-        );
-
-      allow create: if isAdmin()
-        || (
-          isCustomer()
-          && pelangganMilikSaya(
-            request.resource.data.id_pelanggan
-          )
-        );
-
-      allow update, delete: if isAdmin();
-    }
-
-    // ==========================================
-    // DEFAULT DENY
-    // ==========================================
-
-    match /{document=**} {
+    match /{allPaths=**} {
       allow read, write: if false;
     }
   }
