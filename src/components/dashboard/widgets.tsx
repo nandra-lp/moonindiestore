@@ -8,7 +8,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowRight, type LucideIcon } from "lucide-react";
 import { Badge, BrandMark, orderTone } from "@/components/ui";
-import type { StatusOrder } from "@/types/firestore";
+import type { PaymentStatus, StatusOrder } from "@/types/firestore";
 
 // ---------- LiveBadge: penanda data realtime ----------
 export function LiveBadge() {
@@ -71,6 +71,7 @@ export function OrderCard({
   date,
   totalLabel,
   total,
+  paymentStatus,
 }: {
   href: string;
   title: string;
@@ -80,6 +81,7 @@ export function OrderCard({
   date: string;
   totalLabel: string;
   total: string;
+  paymentStatus?: PaymentStatus;
 }) {
   return (
     <Link
@@ -91,6 +93,14 @@ export function OrderCard({
         <Badge tone={orderTone(status)}>{status}</Badge>
       </div>
       <p className="mt-1.5 truncate text-xs text-zinc-500">{summary}</p>
+      {paymentStatus === "bukti_dikirim" && (
+        <p className="mt-1 text-xs font-medium text-moon-blue">
+          Bukti pembayaran menunggu verifikasi
+        </p>
+      )}
+      {paymentStatus === "terverifikasi" && status !== "selesai" && status !== "dibatalkan" && (
+        <p className="mt-1 text-xs font-medium text-green-700">Pembayaran terverifikasi</p>
+      )}
       <div className="mt-4 flex items-center justify-between gap-2 border-t border-zinc-100 pt-3">
         <div className="min-w-0">
           <p className="mb-0.5 text-xs text-zinc-500">{dateLabel}</p>

@@ -11,6 +11,19 @@ import { formatRupiah, formatTanggal } from "@/lib/estimasi";
 import type { Order } from "@/types/firestore";
 import { BackLink, Badge, Card, PageHeader, PrimaryLink, orderTone } from "@/components/ui";
 
+// Petunjuk singkat agar customer tahu langkah pembayaran yang perlu dilakukan.
+function paymentHint(o: WithDocId<Order>) {
+  if (o.status_order === "dibatalkan" || o.status_order === "selesai") return null;
+  if (!o.metode_pembayaran) return null;
+  if (o.status_pembayaran === "terverifikasi")
+    return { tone: "green" as const, label: "Pembayaran lunas" };
+  if (o.status_pembayaran === "bukti_dikirim")
+    return { tone: "blue" as const, label: "Bukti diperiksa" };
+  if (o.status_order === "diproses")
+    return { tone: "yellow" as const, label: "Perlu bayar" };
+  return null;
+}
+
 function OrdersInner() {
   const { profile } = useAuth();
   const [orders, setOrders] = useState<WithDocId<Order>[]>([]);
@@ -63,6 +76,14 @@ function OrdersInner() {
                   <Badge tone={orderTone(o.status_order)}>
                     {o.status_order}
                   </Badge>
+                  {(() => {
+                    const hint = paymentHint(o);
+                    return hint ? (
+                      <Badge tone={hint.tone} size="sm">
+                        {hint.label}
+                      </Badge>
+                    ) : null;
+                  })()}
                 </div>
                 <p className="mt-1.5 truncate text-xs text-zinc-500">
                   {ringkasNamaProduk(ringkasan[o.id], namaProduk)} · #{o.id.slice(0, 8)}

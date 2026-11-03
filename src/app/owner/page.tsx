@@ -128,6 +128,7 @@ function OwnerInner() {
               href={`/owner/orders/${o.id}`}
               title={namaPelanggan[o.id_pelanggan] ?? "Memuat…"}
               status={o.status_order}
+              paymentStatus={o.status_pembayaran}
               summary={`${ringkasNamaProduk(ringkasan[o.id], namaProduk)} · #${o.id.slice(0, 8)}`}
               dateLabel="Dipesan pada"
               date={formatTanggal(o.tgl_order)}

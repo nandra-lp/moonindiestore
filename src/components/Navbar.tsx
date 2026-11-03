@@ -17,6 +17,7 @@ import {
   LogOut,
   Menu,
   Package,
+  User,
   X,
 } from "lucide-react";
 
@@ -198,20 +199,36 @@ export function Navbar() {
                     </div>
                     <div className="p-2 space-y-0.5">
                       {role && (
-                        <button
-                          role="menuitem"
-                          onClick={() => {
-                            router.push(routeForRole(role));
-                            setMenuOpen(false);
-                          }}
-                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-moon-yellow/10 hover:text-moon-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-moon-blue min-h-[44px]"
-                        >
-                          <LayoutDashboard
-                            className="h-4 w-4 text-zinc-400 flex-shrink-0"
-                            aria-hidden="true"
-                          />
-                          Dashboard saya
-                        </button>
+                        <>
+                          <button
+                            role="menuitem"
+                            onClick={() => {
+                              router.push(routeForRole(role));
+                              setMenuOpen(false);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-moon-yellow/10 hover:text-moon-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-moon-blue min-h-[44px]"
+                          >
+                            <LayoutDashboard
+                              className="h-4 w-4 text-zinc-400 flex-shrink-0"
+                              aria-hidden="true"
+                            />
+                            Dashboard saya
+                          </button>
+                          <button
+                            role="menuitem"
+                            onClick={() => {
+                              router.push("/customer/profile");
+                              setMenuOpen(false);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-moon-yellow/10 hover:text-moon-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-moon-blue min-h-[44px]"
+                          >
+                            <User
+                              className="h-4 w-4 text-zinc-400 flex-shrink-0"
+                              aria-hidden="true"
+                            />
+                            Pengaturan Profil
+                          </button>
+                        </>
                       )}
                       <button
                         role="menuitem"

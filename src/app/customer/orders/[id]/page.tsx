@@ -182,6 +182,35 @@ function DetailInner() {
 
   const activeIdx = tahapTerakhir ? TAHAP_PRODUKSI.indexOf(tahapTerakhir as typeof TAHAP_PRODUKSI[number]) : -1;
 
+  const statusPembayaran = order.status_pembayaran ?? "menunggu";
+  let alurJudul = "";
+  let alurDesc = "";
+  let alurBerhasil = false;
+  if (status === "dibatalkan") {
+    alurJudul = "Pesanan dibatalkan";
+    alurDesc = "Pesanan ini tidak akan diproses.";
+  } else if (status === "selesai") {
+    alurJudul = "Pesanan selesai";
+    alurDesc = "Pesanan sudah selesai diproduksi dan dikirim.";
+    alurBerhasil = true;
+  } else if (statusPembayaran === "terverifikasi") {
+    alurJudul = "Pembayaran terverifikasi";
+    alurDesc =
+      status === "produksi"
+        ? "Pesanan sedang diproduksi."
+        : "Pembayaran sudah valid. Pesanan akan segera diproses.";
+    alurBerhasil = true;
+  } else if (statusPembayaran === "bukti_dikirim") {
+    alurJudul = "Bukti pembayaran sedang diperiksa";
+    alurDesc = "Admin akan memverifikasi pembayaran sebelum pesanan diproses.";
+  } else if (status === "diproses") {
+    alurJudul = "Pesanan disetujui — silakan bayar";
+    alurDesc = "Selesaikan pembayaran, lalu unggah bukti agar pesanan dapat diproses.";
+  } else {
+    alurJudul = "Menunggu konfirmasi admin";
+    alurDesc = "Admin sedang meninjau pesanan dan mengonfirmasi total akhir.";
+  }
+
   return (
     <DashboardShell role="customer" title="Detail Pesanan" contain="6xl" className="space-y-6">
       {/* Header */}
@@ -232,6 +261,20 @@ function DetailInner() {
             <dd className="mt-0.5 text-xl font-bold text-cyan font-mono">{formatRupiah(order.total_harga)}</dd>
           </div>
         </dl>
+      </div>
+
+      <div
+        className={`rounded-xl border p-4 ${
+          alurBerhasil
+            ? "border-green-600/30 bg-green-50"
+            : statusPembayaran === "bukti_dikirim"
+              ? "border-moon-blue/30 bg-moon-blue/5"
+              : "border-moon-yellow/40 bg-moon-yellow/10"
+        }`}
+        role="status"
+      >
+        <p className="text-sm font-semibold text-moon-ink">{alurJudul}</p>
+        <p className="mt-1 text-sm text-zinc-600">{alurDesc}</p>
       </div>
 
       {(order.metode_pembayaran === "bca" || order.metode_pembayaran === "qris") && (

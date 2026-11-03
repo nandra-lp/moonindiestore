@@ -49,6 +49,13 @@ export async function updateUserRole(uid: string, role: Role) {
   await updateDoc(doc(db, COLLECTIONS.users, uid), { role });
 }
 
+export async function updateUserNama(uid: string, nama: string) {
+  await updateDoc(doc(db, COLLECTIONS.users, uid), {
+    nama,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 // ---------- generic ----------
 export type WithDocId<T> = T & { id: string };
 
@@ -102,6 +109,16 @@ export async function getPelanggan(id_pelanggan: string) {
 
 export async function listPelanggan() {
   return listBy<Pelanggan>(COLLECTIONS.pelanggan, [orderBy("nama")]);
+}
+
+export async function updatePelangganProfile(
+  id_pelanggan: string,
+  data: { nama?: string; alamat?: string }
+) {
+  await updateDoc(doc(db, COLLECTIONS.pelanggan, id_pelanggan), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 // ---------- PRODUK ----------
@@ -202,14 +219,28 @@ export function subscribeOrdersRecent(
   );
 }
 
-export async function updateOrderStatus(
+// Ubah status order + catat tracking dalam satu batch agar tidak ada
+// perubahan status yang "berhasil" tanpa jejak tracking.
+export async function updateOrderStatusWithTracking(
   id_order: string,
-  status_order: Order["status_order"]
+  status_order: Order["status_order"],
+  tracking: { status: string; keterangan?: string }
 ) {
-  await updateDoc(doc(db, COLLECTIONS.orders, id_order), {
+  const batch = writeBatch(db);
+  const trackingRef = doc(collection(db, COLLECTIONS.tracking_order));
+
+  batch.update(doc(db, COLLECTIONS.orders, id_order), {
     status_order,
     updatedAt: serverTimestamp(),
   });
+  batch.set(trackingRef, {
+    id_tracking: trackingRef.id,
+    id_order,
+    status: tracking.status,
+    waktu: Timestamp.now(),
+    keterangan: tracking.keterangan ?? "",
+  });
+  await batch.commit();
 }
 
 export async function submitPaymentProof(

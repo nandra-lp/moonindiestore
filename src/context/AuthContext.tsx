@@ -23,18 +23,21 @@ import {
   sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
-  updateProfile,
+  updateProfile as updateFirebaseProfile,
   type User as FirebaseUser,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc, collection } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/config";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import {
+  updatePelangganProfile,
+  updateUserNama,
+} from "@/lib/db";
 import {
   DEFAULT_ROUTE_BY_ROLE,
   type Role,
   type UserDoc,
 } from "@/types/firestore";
-import { collection } from "firebase/firestore";
 
 interface AuthState {
   firebaseUser: FirebaseUser | null;
@@ -57,6 +60,7 @@ interface AuthState {
   }) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
   refreshEmailVerification: () => Promise<boolean>;
+  updateProfile: (input: { nama: string; alamat: string }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -197,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         input.email,
         input.password
       );
-      await updateProfile(cred.user, { displayName: input.nama });
+      await updateFirebaseProfile(cred.user, { displayName: input.nama });
 
       // 2-3. Dokumen pelanggan + role customer (idempoten via helper).
       const p = await ensureCustomerDocs(cred.user, {
@@ -244,6 +248,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user.emailVerified;
   }, []);
 
+  const updateProfile = useCallback(
+    async (input: { nama: string; alamat: string }) => {
+      if (!firebaseUser) {
+        throw new Error("Sesi akun tidak ditemukan. Silakan masuk kembali.");
+      }
+      if (!profile?.id_pelanggan) {
+        throw new Error("Data pelanggan tidak ditemukan.");
+      }
+
+      setError(null);
+
+      // 1. Update nama di users/{uid}.
+      await updateUserNama(firebaseUser.uid, input.nama);
+
+      // 2. Update nama + alamat di pelanggan/{id_pelanggan}.
+      // no_hp sengaja tidak diubah — field tidak ada dalam input.
+      await updatePelangganProfile(profile.id_pelanggan, {
+        nama: input.nama,
+        alamat: input.alamat,
+      });
+
+      // 3. Segarkan profile lokal agar UI segera menampilkan data terbaru.
+      const p = await fetchProfile(firebaseUser.uid);
+      setProfile(p ?? null);
+    },
+    [firebaseUser, profile]
+  );
+
   const logout = useCallback(async () => {
     await signOut(auth);
     setProfile(null);
@@ -263,6 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registerCustomer,
       resendVerificationEmail,
       refreshEmailVerification,
+      updateProfile,
       logout,
     }),
     [
@@ -276,6 +309,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registerCustomer,
       resendVerificationEmail,
       refreshEmailVerification,
+      updateProfile,
       logout,
     ]
   );

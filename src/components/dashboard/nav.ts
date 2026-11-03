@@ -9,6 +9,7 @@ import {
   PlusCircle,
   ShoppingCart,
   Users,
+  User,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/types/firestore";
@@ -35,6 +36,7 @@ export const DASHBOARD_NAV: Record<Role, DashboardNavItem[]> = {
     { href: "/customer/estimasi", label: "Estimasi", icon: Calculator },
     { href: "/customer/orders", label: "Pesanan", icon: ShoppingCart },
     { href: "/customer/pesan", label: "Pesan", icon: PlusCircle },
+    { href: "/customer/profile", label: "Profil", icon: User },
   ],
 };
 

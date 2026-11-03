@@ -16,7 +16,7 @@ import {
   listDetailByOrder,
   listProduksiByOrder,
   listTrackingByOrder,
-  updateOrderStatus,
+  updateOrderStatusWithTracking,
   verifyOrderPayment,
   type WithDocId,
 } from "@/lib/db";
@@ -301,6 +301,37 @@ function AdminDetailInner() {
   if (status === "selesai") persen = 100;
   const activeIdx = tahapTerakhir ? TAHAP_PRODUKSI.indexOf(tahapTerakhir as typeof TAHAP_PRODUKSI[number]) : -1;
 
+  const statusPembayaran = order.status_pembayaran ?? "menunggu";
+  let alurJudul = "";
+  let alurDesc = "";
+  if (status === "dibatalkan") {
+    alurJudul = "Pesanan dibatalkan";
+    alurDesc = "Tidak ada tindakan lanjutan. Pesanan tidak akan diproses.";
+  } else if (status === "selesai") {
+    alurJudul = "Pesanan selesai";
+    alurDesc = "Seluruh proses pesanan sudah tuntas.";
+  } else if (statusPembayaran === "bukti_dikirim") {
+    alurJudul = "Verifikasi pembayaran";
+    alurDesc = "Periksa bukti pembayaran customer, lalu klik Konfirmasi pembayaran. Produksi masih terkunci sampai pembayaran terverifikasi.";
+  } else if (statusPembayaran === "terverifikasi") {
+    if (status === "produksi") {
+      alurJudul = "Produksi berjalan";
+      alurDesc = "Pembayaran sudah valid. Perbarui tahap produksi dan tracking pengiriman.";
+    } else {
+      alurJudul = "Pembayaran valid — siap diproses";
+      alurDesc = "Pembayaran sudah terverifikasi. Set status ke produksi, lalu mulai tahap produksi.";
+    }
+  } else if (status === "menunggu") {
+    alurJudul = "Tinjau pesanan";
+    alurDesc = "Cek detail & desain. Set status ke diproses agar customer dapat melakukan pembayaran.";
+  } else if (status === "diproses") {
+    alurJudul = "Menunggu pembayaran customer";
+    alurDesc = "Customer sudah dapat membayar. Tunggu bukti pembayaran sebelum memproses produksi.";
+  } else if (status === "produksi") {
+    alurJudul = "Produksi berjalan";
+    alurDesc = "Perbarui tahap produksi dan tracking pengiriman.";
+  }
+
   return (
     <DashboardShell role="admin" title="Kelola Order" contain="6xl" className="space-y-6">
       {/* Header */}
@@ -323,6 +354,22 @@ function AdminDetailInner() {
         <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="status">
           Pesanan sedang disiapkan customer. Tunggu hingga detailnya selesai dimuat.
         </p>
+      )}
+
+      {alurJudul && (
+        <div
+          className={`rounded-xl border p-4 ${
+            statusPembayaran === "terverifikasi"
+              ? "border-green-600/30 bg-green-50"
+              : statusPembayaran === "bukti_dikirim"
+                ? "border-moon-blue/30 bg-moon-blue/5"
+                : "border-moon-yellow/40 bg-moon-yellow/10"
+          }`}
+          role="status"
+        >
+          <p className="text-sm font-semibold text-moon-ink">{alurJudul}</p>
+          <p className="mt-1 text-sm text-zinc-600">{alurDesc}</p>
+        </div>
       )}
 
       {/* Order Meta Bar */}
@@ -624,8 +671,10 @@ function AdminDetailInner() {
                     setBusy(true);
                     setMsg(null);
                     try {
-                      await updateOrderStatus(order.id, s);
-                      await addTracking({ id_order: order.id, status: `Status order → ${s}`, waktu: Timestamp.now(), keterangan: "" });
+                      await updateOrderStatusWithTracking(order.id, s, {
+                        status: `Status order → ${s}`,
+                        keterangan: "",
+                      });
                       await reload();
                     } catch (err) { pesanError(err, "Gagal mengubah status"); }
                     finally { setBusy(false); }
@@ -637,6 +686,11 @@ function AdminDetailInner() {
                 </button>
               ))}
             </div>
+            <p className="mt-3 text-xs text-zinc-500">
+              Alur: tinjau pesanan → set <strong className="text-ink">diproses</strong> agar customer
+              membayar → verifikasi pembayaran → status <strong className="text-ink">produksi</strong>{" "}
+              baru aktif setelah pembayaran terverifikasi.
+            </p>
           </div>
         </section>
       </div>

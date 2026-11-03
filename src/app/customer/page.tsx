@@ -21,7 +21,7 @@ import {
 } from "@/lib/db";
 import { formatRupiah, formatTanggal } from "@/lib/estimasi";
 import type { Order, PerkiraanHarga } from "@/types/firestore";
-import { Badge, EmptyRow, orderTone } from "@/components/ui";
+import { Badge, orderTone } from "@/components/ui";
 import { ProdukRingkasan } from "@/components/ProdukRingkasan";
 
 const textLinkClass =
@@ -169,7 +169,6 @@ function CustomerInner() {
           <div className="mb-4">
             <SectionHead
               title="Pesanan Terbaru"
-              live
               action={
                 orders.length > 5 && (
                   <Link href="/customer/orders" className={textLinkClass}>
@@ -207,12 +206,26 @@ function CustomerInner() {
                 </li>
               ))}
               {orders.length === 0 && (
-                <EmptyRow>
-                  Belum ada pesanan aktif.{" "}
-                  <Link href="/customer/pesan" className={textLinkClass}>
-                    Buat pesanan pertama →
-                  </Link>
-                </EmptyRow>
+                <li className="p-5 sm:p-7">
+                  <div className="flex flex-col items-center rounded-2xl bg-zinc-50 px-5 py-8 text-center sm:py-10">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-moon-yellow/25 text-moon-ink">
+                      <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <h3 className="mt-4 font-semibold text-moon-ink">
+                      Belum ada pesanan
+                    </h3>
+                    <p className="mt-1 max-w-xs text-sm leading-6 text-zinc-500">
+                      Pesanan yang Anda buat akan muncul di sini agar mudah dipantau.
+                    </p>
+                    <Link
+                      href="/customer/pesan"
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-moon-ink px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-moon-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue"
+                    >
+                      Buat pesanan pertama
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </div>
+                </li>
               )}
             </ul>
           </div>

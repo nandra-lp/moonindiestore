@@ -163,7 +163,14 @@ service cloud.firestore {
         && request.resource.data.role == 'customer'
         && request.resource.data.uid == myUid()
         && request.resource.data.get('requires_email_verification', false) == true;
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isCustomer()
+          && myUid() == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'nama',
+            'updatedAt'
+          ]));
+      allow delete: if isAdmin();
     }
 
     match /pelanggan/{id} {
@@ -178,7 +185,13 @@ service cloud.firestore {
         || (isCustomer()
           && customerEmailVerified()
           && resource.data.uid == myUid()
-          && request.resource.data.uid == myUid());
+          && request.resource.data.uid == myUid()
+          && request.resource.data.no_hp == resource.data.no_hp
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'nama',
+            'alamat',
+            'updatedAt'
+          ]));
       allow delete: if isAdmin();
     }
 
@@ -242,8 +255,7 @@ service cloud.firestore {
         || isOwner()
         || (isCustomer()
           && orderMilikCustomerRead(resource.data.id_order));
-      allow create: if (isAdmin()
-          && orderPaidAfter(request.resource.data.id_order))
+      allow create: if isAdmin()
         || (orderMilikCustomerWrite(request.resource.data.id_order)
           && orderMenungguAfter(request.resource.data.id_order)
           && orderReadyAfter(request.resource.data.id_order)
