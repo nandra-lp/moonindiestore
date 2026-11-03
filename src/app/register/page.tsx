@@ -3,11 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { pesanErrorAuth } from "@/lib/auth-errors";
 import { resolveTarget } from "@/lib/role-route";
-import { Card, BrandMark, ErrorBox, PrimaryButton, SuccessBox } from "@/components/ui";
+import {
+  Card,
+  BrandMark,
+  ErrorBox,
+  InputField,
+  PasswordInput,
+  PrimaryButton,
+  SuccessBox,
+} from "@/components/ui";
 
 // Pendaftaran mandiri KHUSUS customer (sesuai permintaan).
 // Admin/owner tidak bisa daftar dari sini — dibuat via scripts/seed-users.mjs.
@@ -21,7 +28,6 @@ export default function RegisterPage() {
     no_hp: "",
     alamat: "",
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -85,114 +91,63 @@ export default function RegisterPage() {
         {/* suppressHydrationWarning: ekstensi browser (password manager dsb.)
             kadang menyentuh DOM form saat autofill. */}
         <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4 md:gap-5" suppressHydrationWarning>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="nama" className="text-sm font-medium text-moon-ink">
-              Nama lengkap
-            </label>
-            <input
-              id="nama"
-              type="text"
-              name="name"
-              autoComplete="name"
-              required
-              value={form.nama}
-              onChange={(e) => set("nama", e.target.value)}
-              placeholder="Masukkan nama lengkap Anda"
-              className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
-              suppressHydrationWarning
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-moon-ink">
-              Email
-            </label>
-            <input
-              id="email"
-              ref={emailRef}
-              type="email"
-              name="email"
-              autoComplete="email"
-              required
-              value={form.email}
-              onChange={(e) => set("email", e.target.value)}
-              placeholder="nama@email.com"
-              className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
-              suppressHydrationWarning
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="no_hp" className="text-sm font-medium text-moon-ink">
-              No. HP (WhatsApp)
-            </label>
-            <input
-              id="no_hp"
-              type="tel"
-              name="tel"
-              autoComplete="tel"
-              inputMode="tel"
-              required
-              value={form.no_hp}
-              onChange={(e) => set("no_hp", e.target.value)}
-              placeholder="08xxxxxxxxxx"
-              className="w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
-              suppressHydrationWarning
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="alamat" className="text-sm font-medium text-moon-ink">
-              Alamat pengiriman
-            </label>
-            <textarea
-              id="alamat"
-              name="street-address"
-              autoComplete="street-address"
-              required
-              rows={3}
-              value={form.alamat}
-              onChange={(e) => set("alamat", e.target.value)}
-              placeholder="Alamat lengkap untuk pengiriman barang"
-              className="w-full resize-none rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400"
-              suppressHydrationWarning
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm font-medium text-moon-ink">
-              Password
-            </label>
-            <span className="relative">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                name="password"
-                autoComplete="new-password"
-                required
-                minLength={6}
-                value={form.password}
-                onChange={(e) => set("password", e.target.value)}
-                placeholder="Minimal 6 karakter"
-                className="w-full rounded-xl border border-zinc-200 py-2.5 pl-4 pr-12 font-normal placeholder:text-zinc-400"
-                suppressHydrationWarning
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={
-                  showPassword
-                    ? "Sembunyikan password"
-                    : "Tampilkan password"
-                }
-                aria-pressed={showPassword}
-                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-zinc-400 transition-colors hover:text-moon-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-moon-blue"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" aria-hidden="true" />
-                ) : (
-                  <Eye className="h-5 w-5" aria-hidden="true" />
-                )}
-              </button>
-            </span>
-            <p className="mt-1 text-xs text-zinc-500">Minimal 6 karakter</p>
-          </div>
+          <InputField
+            id="nama"
+            label="Nama lengkap"
+            type="text"
+            name="name"
+            autoComplete="name"
+            required
+            value={form.nama}
+            onChange={(e) => set("nama", e.target.value)}
+            placeholder="Masukkan nama lengkap Anda"
+          />
+          <InputField
+            id="email"
+            label="Email"
+            type="email"
+            name="email"
+            autoComplete="email"
+            required
+            ref={emailRef}
+            value={form.email}
+            onChange={(e) => set("email", e.target.value)}
+            placeholder="nama@email.com"
+          />
+          <InputField
+            id="no_hp"
+            label="No. HP (WhatsApp)"
+            type="tel"
+            name="tel"
+            autoComplete="tel"
+            inputMode="tel"
+            required
+            value={form.no_hp}
+            onChange={(e) => set("no_hp", e.target.value)}
+            placeholder="08xxxxxxxxxx"
+          />
+          <InputField
+            id="alamat"
+            label="Alamat pengiriman"
+            type="text"
+            name="street-address"
+            autoComplete="street-address"
+            required
+            value={form.alamat}
+            onChange={(e) => set("alamat", e.target.value)}
+            placeholder="Alamat lengkap untuk pengiriman barang"
+            multiline
+            rows={3}
+          />
+          <PasswordInput
+            id="password"
+            label="Password"
+            required
+            minLength={6}
+            value={form.password}
+            onChange={(e) => set("password", e.target.value)}
+            placeholder="Minimal 6 karakter"
+          />
 
           {msg && <ErrorBox>{msg}</ErrorBox>}
           {successMsg && <SuccessBox>{successMsg}</SuccessBox>}

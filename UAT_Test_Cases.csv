@@ -1,0 +1,89 @@
+Test Case ID,Module,Role,Feature,Scenario,Preconditions,Test Steps,Expected Result,Test Data,Priority,Status,Actual Result,Bug ID,Evidence,Tester,Date Tested,Notes
+AUTH-01,Authentication,Customer,Login,"Valid login redirects to customer dashboard",User customer@test exists with password,1. Open /login
+2. Enter email: customer@test
+3. Enter password: password123
+4. Click Login,Redirect to /customer, dashboard loads with user name,customer@test / password123,P1,,,,,,
+AUTH-02,Authentication,Customer,Login,"Invalid credentials show error",User customer@test exists,1. Open /login
+2. Enter email: customer@test
+3. Enter password: wrongpass
+4. Click Login,Error message "Email/password salah" displayed,customer@test / wrongpass,P1,,,,,,
+AUTH-03,Authentication,Customer,Register,"New customer registration creates profile and logs in",No existing user with test email,1. Open /register
+2. Fill: Nama, Email baru, Password (min 6 char), Confirm Password
+3. Click Register
+4. Verify redirect to /customer,Auto-login, Pelanggan doc created with uid match, uid linked in UserDoc,P1,,,,,,
+AUTH-04,Authentication,Customer,Authorization,"Accessing admin page redirects to unauthorized",Logged in as customer,1. Navigate to /admin,Redirect to /unauthorized, shows current role "customer", back link works,Customer session,P1,,,,,,
+AUTH-05,Authentication,Customer,Session,"Session persists after refresh",Logged in as customer,1. Refresh browser (F5),2. Close & reopen browser,Still logged in, no re-login prompt,Customer session,P2,,,,,,
+AUTH-06,Authentication,Customer,Logout,"Logout clears session and redirects to login",Logged in as customer,1. Click logout (if available) or clear auth,2. Try access /customer,Redirect to /login, session cleared,Customer session,P2,,,,,,
+AUTH-07,Authentication,Admin,Login,"Valid admin login redirects to admin dashboard",User admin@test exists with role admin,1. Open /login
+2. Enter admin@test credentials
+3. Click Login,Redirect to /admin,admin@test / password123,P1,,,,,,
+AUTH-08,Authentication,Owner,Login,"Valid owner login redirects to owner dashboard",User owner@test exists with role owner,1. Open /login
+2. Enter owner@test credentials
+3. Click Login,Redirect to /owner,owner@test / password123,P1,,,,,,
+CUST-01,Customer,Pesan Produk,Product Catalog,"Catalog displays products with images, prices, units",At least 5 products in Firestore with gambar_url,1. Open /customer/pesan
+2. Wait for load,Product cards grid (sm:2, lg:3, xl:4) with thumbnail, name, price/satuan, gold ring on selected,10+ seeded products,P1,,,,,,
+CUST-02,Customer,Pesan Produk,Product Selection,"Selecting product enables form fields",Catalog loaded,1. Click a product card,Form fields (jumlah, spesifikasi, desain, catatan) enabled, selected card has gold ring,Any product,P1,,,,,,
+CUST-03,Customer,Pesan Produk,File Upload,"Reject file > 10 MB",Product selected,1. Click dropzone
+2. Select file > 10 MB (e.g., 15 MB image),Error "Ukuran file desain maksimal 10 MB", file not attached,15 MB test file,P1,,,,,,
+CUST-04,Customer,Pesan Produk,File Upload,"Accept valid design file (JPG/PNG/PDF ≤ 10 MB)",Product selected,1. Click dropzone
+2. Select valid file (e.g., 2 MB JPG),Preview shows image, file name & size displayed, "Ganti file" & "Hapus" buttons work,2 MB JPG/PNG/PDF,P1,,,,,,
+CUST-05,Customer,Pesan Produk,Validation,"Submit without product shows error",Form loaded, no product selected,1. Click "Kirim pesanan",Error "Pilih produk dulu",No product selected,P2,,,,,,
+CUST-06,Customer,Pesan Produk,Create Order,"Valid submission creates order and redirects",Product selected, valid inputs, linkage OK,1. Fill jumlah: 50
+2. Fill spesifikasi: "Paper bag kraft 20x30 cm"
+3. Upload design (optional)
+4. Fill catatan: "Logo tengah"
+5. Click "Kirim pesanan",Order created with status "menunggu", tracking "Order dibuat", redirect to /customer/orders/[id], design uploaded to Storage,Valid form data,P1,,,,,,
+CUST-07,Customer,Order List,List Orders,"Only logged-in customer's orders shown",Customer has 3 orders in Firestore,1. Open /customer/orders,Only 3 orders displayed, status badges correct color,3 seeded orders,P1,,,,,,
+CUST-08,Customer,Order Detail,View Detail,"Order detail shows progress, timeline, cost, items, design",Order exists with detail, produksi, tracking, design,1. Click order from list,All sections render: progress bar %, timeline with connector, cost summary (estimasi vs aktual), item cards with design preview,Order ID from CUST-06,P1,,,,,,
+CUST-09,Customer,Order Detail,Cancel Order,"Cancel button works for 'menunggu' status",Order status = "menunggu",1. Click "Batalkan pesanan" (if visible)
+2. Confirm,Status changes to "dibatalkan", tracking entry added,Order in "menunggu" status,P2,,,,,,
+CUST-10,Customer,Pesan Produk,Estimasi Link,"?estimasi= param pre-fills form",Valid estimasi doc owned by customer,1. Open /customer/pesan?estimasi=<estimasi_id>,Product, jumlah, harga pre-filled from estimasi, estimasi_id saved in order,Seeded estimasi doc,P2,,,,,,
+CUST-11,Customer,Pesan Produk,Direct Product Link,"?produk= param selects product",Valid produk id,1. Open /customer/pesan?produk=<produk_id>,Product auto-selected, jumlah = 1,Seeded produk id,P2,,,,,,
+ADM-01,Admin,Product Management,List Products,"Grid with realtime search & filter by jenis",10+ products with varied jenis,1. Open /admin/produk
+2. Type in search box
+3. Select jenis filter,Search filters nama/jenis realtime, dropdown shows unique jenis from data,Seeded products,P1,,,,,,
+ADM-02,Admin,Product Management,Add Product,"Create product with image ≤ 2 MB",Admin logged in,1. Click "+ Tambah produk"
+2. Fill: Nama, Jenis (dropdown), Harga, Satuan (dropdown)
+3. Upload image ≤ 2 MB
+4. Click "Tambah produk",Product appears in grid, image loads, gambar_url & gambar_path saved,New product data + 1 MB image,P1,,,,,,
+ADM-03,Admin,Product Management,Edit Product,"Update product & replace image deletes old from Storage",Existing product with image,1. Click edit on product
+2. Change nama, harga
+3. Upload new image
+4. Click "Simpan perubahan",Product updated, old image deleted from Storage, new URL valid,Existing product,P1,,,,,,
+ADM-04,Admin,Product Management,Delete Product,"Confirmation modal deletes product & image",Existing product,1. Click delete on product
+2. Confirm in modal,Product removed from grid, image deleted from Storage,Existing product,P1,,,,,,
+ADM-05,Admin,Order Management,View Order Detail,"Full detail: meta, progress, cost, manage, status, tracking, designs",Order with full related data,1. Open /admin/orders/[id],All sections present with correct data,Order with produksi & tracking,P1,,,,,,
+ADM-06,Admin,Order Management,Progress Tracking,"Progress bar % & timeline update correctly",Order with produksi records,1. Check progress bar % matches hitungProgresProduksi
+2. Verify timeline icons: done=gold check, running=gold pulse, pending=circle,Order with mixed status produksi,P1,,,,,,
+ADM-07,Admin,Order Management,Mark Stage Complete,"'Tandai selesai' updates existing 'berjalan' record (no duplicate)",Produksi record with status "berjalan" for tahap,1. Select same tahap
+2. Click "Tandai selesai",Existing record updated to "selesai" with waktu_selesai, NO new record created,Order with "berjalan" produksi,P1,,,,,,
+ADM-08,Admin,Order Management,Change Order Status,"Pill buttons update status & auto-add tracking",Order in "menunggu",1. Click "diproses" pill,Status changes, tracking "Status order → diproses" added,Order in "menunggu",P1,,,,,,
+ADM-09,Admin,Order Management,Manual Tracking,"Add custom tracking entry appears in timeline",Order detail open,1. Enter status: "Paket dikirim via JNE"
+2. Click "Kirim",New entry in timeline with gold first-marker, connector line, id-ID timestamp,Any order,P2,,,,,,
+ADM-10,Admin,Order Management,Delete Order,"Cascade delete: order, detail, produksi, tracking, design files",Order with full related data,1. Click "Hapus order"
+2. Confirm modal showing counts,All deleted, redirect to /admin,Order with detail, produksi, tracking, design files,P1,,,,,,
+ADM-11,Admin,Order Management,Cleanup Obsolete Stages,"Warning shows for non-standard tahap, cleanup removes them",Produksi records with tahap not in TAHAP_PRODUKSI,1. Verify warning card shows
+2. Click "Bersihkan tahap usang"
+3. Confirm,Only obsolete records deleted, standard tahap untouched,Order with obsolete tahap records,P2,,,,,,
+OWN-01,Owner,Dashboard,View Dashboard,"Owner dashboard shows summary widgets",Owner logged in,1. Open /owner,Widgets: total orders, revenue, pending estimasi, etc. accurate,Seeded data,P2,,,,,,
+OWN-02,Owner,Order Management,View Order Detail Read-Only,"Owner can view order detail but not edit progress/status",Owner logged in, order exists,1. Open /owner/orders/[id],Detail visible, NO "Kelola progres" or "Status order" editable sections,Order ID,P2,,,,,,
+OWN-03,Owner,Estimasi,View Estimasi List,"Owner sees all customer estimasi",Owner logged in, estimasi exist,1. Open /owner/estimasi,List of estimasi with customer, product, total,Seeded estimasi docs,P2,,,,,,
+EST-01,Estimasi,Customer,Calculate Estimate,"Form calculates total_estimasi correctly",Customer logged in,1. Open /customer/estimasi
+2. Select produk, enter jumlah, biaya bahan, biaya produksi
+3. Verify total,Total = (harga_satuan * jumlah) + biaya_bahan + biaya_produksi,Seeded produk, biaya bahan=50000, produksi=30000,P2,,,,,,
+EST-02,Estimasi,Customer,Save Estimate,"Saved estimasi appears in list & usable for pesan",Customer logged in,1. Fill estimate form
+2. Click "Simpan estimasi"
+3. Check list
+4. Click "Pesan" link,Estimasi saved, appears in list, link opens /customer/pesan?estimasi= with pre-filled form,Valid estimate data,P2,,,,,,
+NF-01,Non-Functional,All,Responsive Design,"Layout works on mobile, tablet, desktop",Staging deployed,1. Test at ≤639px (mobile)
+2. Test at 640-1023px (tablet)
+3. Test at ≥1024px (desktop),No horizontal scroll, font ≥16px on inputs (no iOS zoom), sticky quote only desktop, grid cols responsive,Chrome DevTools device toolbar,P2,,,,,,
+NF-02,Non-Functional,All,Accessibility,"Keyboard nav, focus rings, ARIA, contrast",Staging deployed,1. Tab through all pages
+2. Check focus-visible: outline-2 outline-cyan
+3. Verify ARIA labels on inputs, buttons
+4. Check color contrast ratios,All interactive elements reachable, focus ring consistent, labels linked, contrast ≥4.5:1,axe DevTools / manual,P2,,,,,,
+NF-03,Non-Functional,All,Reduced Motion,"Animations disabled when prefers-reduced-motion",OS setting: reduced motion ON,1. Open pages with animations (timeline, progress bar),Transitions disabled, no animate-pulse on running stage,OS accessibility setting,P3,,,,,,
+NF-04,Non-Functional,Customer,Error Handling,"Permission denied shows actionable message",Simulate Firestore rules deny (or test with unlinked account),1. Try create order with unlinked account,Message includes: "firestore.rules belum di-Publish" & "akun tidak tertaut ke data pelanggan",Unlinked test account,P2,,,,,,
+NF-05,Non-Functional,All,Loading States,"Skeleton loaders show during fetch",Slow network / throttle,1. Open /admin/produk, /customer/orders/[id],Skeleton cards for product grid, loading spinner for detail,SLOW 3G throttle,P2,,,,,,
+NF-06,Non-Functional,All,Security Rules,"Firestore rules enforce role-based access",Rules deployed to staging,1. Firebase Console > Rules > Simulator
+2. Test: customer read own orders only, admin full, owner read-only,Simulator passes all role scenarios,Firebase Rules simulator,P1,,,,,,

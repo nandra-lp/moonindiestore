@@ -10,9 +10,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import type { Role, StatusOrder } from "@/types/firestore";
+
+function cn(...classes: (string | undefined | null | boolean)[]) {
+  return classes.filter(Boolean).join(" ");
+}
 
 export type Tone = "yellow" | "blue" | "pink" | "zinc" | "green" | "ink";
 
@@ -56,14 +61,20 @@ export function Badge({
   tone = "zinc",
   children,
   className = "",
+  size = "md",
 }: {
   tone?: Tone;
   children: ReactNode;
   className?: string;
+  size?: "sm" | "md";
 }) {
+  const sizeClasses =
+    size === "sm"
+      ? "px-2 py-0 text-[10px] font-medium"
+      : "px-2.5 py-0.5 text-xs font-medium";
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeTones[tone]} ${className}`}
+      className={`inline-flex items-center rounded-full ${sizeClasses} ${badgeTones[tone]} ${className}`}
     >
       {children}
     </span>
@@ -87,6 +98,206 @@ export function Card({
     >
       {children}
     </section>
+  );
+}
+
+const baseInput =
+  "w-full rounded-xl border border-zinc-200 px-4 py-2.5 font-normal placeholder:text-zinc-400 focus:border-moon-blue focus:ring-1 focus:ring-moon-blue/20 focus:outline-none transition-colors";
+
+export interface InputFieldProps {
+  id: string;
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  autoComplete?: string;
+  required?: boolean;
+  disabled?: boolean;
+  error?: string;
+  inputMode?: React.InputHTMLAttributes<HTMLInputElement>["inputMode"];
+  name?: string;
+  minLength?: number;
+  className?: string;
+  ref?: React.Ref<HTMLInputElement>;
+  rows?: number;
+  multiline?: boolean;
+}
+
+export function InputField({
+  id,
+  label,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+  required,
+  disabled,
+  error,
+  inputMode,
+  name,
+  minLength,
+  className = "",
+  ref,
+  rows,
+  multiline = false,
+}: InputFieldProps) {
+  const hasError = Boolean(error);
+  const inputClasses = cn(
+    baseInput,
+    hasError
+      ? "border-moon-pink/50 focus:border-moon-pink focus:ring-moon-pink/20"
+      : "",
+    className,
+  );
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label
+        htmlFor={id}
+        className={cn(
+          "text-sm font-medium",
+          hasError ? "text-moon-pink" : "text-moon-ink",
+        )}
+      >
+        {label}
+      </label>
+      {multiline ? (
+        <textarea
+          id={id}
+          ref={ref as React.Ref<HTMLTextAreaElement>}
+          name={name ?? id}
+          autoComplete={autoComplete}
+          required={required}
+          disabled={disabled}
+          value={value}
+          onChange={onChange as React.ChangeEventHandler<HTMLTextAreaElement>}
+          placeholder={placeholder}
+          inputMode={inputMode}
+          minLength={minLength}
+          rows={rows}
+          className={cn(
+            inputClasses,
+            "resize-none",
+          )}
+          suppressHydrationWarning
+        />
+      ) : (
+        <input
+          id={id}
+          ref={ref}
+          type={type}
+          name={name ?? id}
+          autoComplete={autoComplete}
+          required={required}
+          disabled={disabled}
+          value={value}
+          onChange={onChange as React.ChangeEventHandler<HTMLInputElement>}
+          placeholder={placeholder}
+          inputMode={inputMode}
+          minLength={minLength}
+          className={inputClasses}
+          suppressHydrationWarning
+        />
+      )}
+      {error && (
+        <p className="mt-1 text-xs text-moon-pink" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export interface PasswordInputProps {
+  id: string;
+  label?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  autoComplete?: string;
+  required?: boolean;
+  disabled?: boolean;
+  error?: string;
+  minLength?: number;
+  className?: string;
+}
+
+export function PasswordInput({
+  id,
+  label = "Password",
+  value,
+  onChange,
+  placeholder,
+  autoComplete = "new-password",
+  required,
+  disabled,
+  error,
+  minLength,
+  className = "",
+}: PasswordInputProps) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {label && (
+        <label
+          htmlFor={id}
+          className={cn(
+            "text-sm font-medium",
+            Boolean(error) ? "text-moon-pink" : "text-moon-ink",
+          )}
+        >
+          {label}
+        </label>
+      )}
+      <span className="relative">
+        <input
+          id={id}
+          type={showPassword ? "text" : "password"}
+          name={id}
+          autoComplete={autoComplete}
+          required={required}
+          disabled={disabled}
+          value={value}
+          onChange={onChange as React.ChangeEventHandler<HTMLInputElement>}
+          placeholder={placeholder}
+          minLength={minLength}
+          className={cn(
+            baseInput,
+            "py-2.5 pl-4 pr-12",
+            Boolean(error)
+              ? "border-moon-pink/50 focus:border-moon-pink focus:ring-moon-pink/20"
+              : "",
+            className,
+          )}
+          suppressHydrationWarning
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword((v) => !v)}
+          aria-label={
+            showPassword ? "Sembunyikan password" : "Tampilkan password"
+          }
+          aria-pressed={showPassword}
+          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-zinc-400 transition-colors hover:text-moon-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-moon-blue"
+        >
+          {showPassword ? (
+            <EyeOff className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <Eye className="h-5 w-5" aria-hidden="true" />
+          )}
+        </button>
+      </span>
+      {error && (
+        <p className="mt-1 text-xs text-moon-pink" role="alert">
+          {error}
+        </p>
+      )}
+      {minLength && !error && (
+        <p className="mt-1 text-xs text-zinc-500">Minimal {minLength} karakter</p>
+      )}
+    </div>
   );
 }
 
