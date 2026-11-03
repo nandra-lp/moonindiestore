@@ -19,6 +19,8 @@ import {
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  reload,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -38,9 +40,14 @@ interface AuthState {
   firebaseUser: FirebaseUser | null;
   profile: UserDoc | null;
   role: Role | null;
+  emailVerified: boolean;
+  needsEmailVerification: boolean;
   loading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<Role>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ role: Role; needsEmailVerification: boolean }>;
   registerCustomer: (input: {
     nama: string;
     email: string;
@@ -48,6 +55,8 @@ interface AuthState {
     no_hp: string;
     alamat: string;
   }) => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
+  refreshEmailVerification: () => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -76,7 +85,8 @@ async function fetchProfile(uid: string): Promise<UserDoc | null> {
 // rules versi lama maupun baru.
 async function ensureCustomerDocs(
   fbUser: FirebaseUser,
-  fallback: { nama: string; no_hp: string; alamat: string }
+  fallback: { nama: string; no_hp: string; alamat: string },
+  requiresEmailVerification = false
 ): Promise<UserDoc> {
   const existing = await fetchProfile(fbUser.uid);
   if (existing) return existing;
@@ -88,6 +98,9 @@ async function ensureCustomerDocs(
     role: "customer",
     id_pelanggan: pelangganRef.id,
     nama: fallback.nama,
+    ...(requiresEmailVerification
+      ? { requires_email_verification: true }
+      : {}),
     createdAt: serverTimestamp(),
   });
   await setDoc(pelangganRef, {
@@ -107,22 +120,31 @@ async function ensureCustomerDocs(
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserDoc | null>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const needsEmailVerification =
+    profile?.requires_email_verification === true && !emailVerified;
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
       if (!user) {
         setProfile(null);
+        setEmailVerified(false);
         setRoleCookie(null);
         setLoading(false);
         return;
       }
+      setEmailVerified(user.emailVerified);
       try {
         const p = await fetchProfile(user.uid);
         setProfile(p);
-        setRoleCookie(p?.role ?? null);
+        setRoleCookie(
+          p?.requires_email_verification && !user.emailVerified
+            ? null
+            : p?.role ?? null
+        );
       } catch {
         setProfile(null);
       } finally {
@@ -137,8 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cred = await signInWithEmailAndPassword(auth, email, password);
     let p = await fetchProfile(cred.user.uid);
     if (!p) {
-      // Akun Auth yatim (tanpa dokumen role) otomatis menjadi customer
-      // agar login tidak mentok — admin bisa menaikkan rolenya nanti.
+      // Akun Auth yatim yang sudah ada diperlakukan sebagai akun lama.
       const nama =
         cred.user.displayName ??
         (cred.user.email ?? email).split("@")[0] ??
@@ -147,11 +168,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nama,
         no_hp: "-",
         alamat: "-",
-      });
+      }, true);
     }
+    const requiresEmailVerification =
+      p.requires_email_verification === true && !cred.user.emailVerified;
+    setFirebaseUser(cred.user);
+    setEmailVerified(cred.user.emailVerified);
     setProfile(p);
-    setRoleCookie(p.role);
-    return p.role;
+    setRoleCookie(requiresEmailVerification ? null : p.role);
+    return {
+      role: p.role,
+      needsEmailVerification: requiresEmailVerification,
+    };
   }, []);
 
   const registerCustomer = useCallback(
@@ -176,12 +204,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nama: input.nama,
         no_hp: input.no_hp,
         alamat: input.alamat,
-      });
+      }, true);
+      setFirebaseUser(cred.user);
+      setEmailVerified(cred.user.emailVerified);
       setProfile(p);
-      setRoleCookie("customer");
+      setRoleCookie(null);
+      await sendEmailVerification(cred.user, {
+        url: `${window.location.origin}/verify-email`,
+      });
     },
     []
   );
+
+  const resendVerificationEmail = useCallback(async () => {
+    if (!auth.currentUser) {
+      throw new Error("Sesi akun tidak ditemukan. Silakan masuk kembali.");
+    }
+    await sendEmailVerification(auth.currentUser, {
+      url: `${window.location.origin}/verify-email`,
+    });
+  }, []);
+
+  const refreshEmailVerification = useCallback(async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("Sesi akun tidak ditemukan. Silakan masuk kembali.");
+    }
+    await reload(user);
+    await user.getIdToken(true);
+    const p = await fetchProfile(user.uid);
+    setFirebaseUser(user);
+    setEmailVerified(user.emailVerified);
+    setProfile(p);
+    setRoleCookie(
+      p?.requires_email_verification && !user.emailVerified
+        ? null
+        : p?.role ?? null
+    );
+    return user.emailVerified;
+  }, []);
 
   const logout = useCallback(async () => {
     await signOut(auth);
@@ -194,13 +255,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       firebaseUser,
       profile,
       role: profile?.role ?? null,
+      emailVerified,
+      needsEmailVerification,
       loading,
       error,
       login,
       registerCustomer,
+      resendVerificationEmail,
+      refreshEmailVerification,
       logout,
     }),
-    [firebaseUser, profile, loading, error, login, registerCustomer, logout]
+    [
+      firebaseUser,
+      profile,
+      emailVerified,
+      needsEmailVerification,
+      loading,
+      error,
+      login,
+      registerCustomer,
+      resendVerificationEmail,
+      refreshEmailVerification,
+      logout,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

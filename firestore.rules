@@ -29,6 +29,14 @@ service cloud.firestore {
       return myRole() == 'customer';
     }
 
+    function customerEmailVerified() {
+      let userPath = /databases/$(database)/documents/users/$(myUid());
+      return signedIn()
+        && exists(userPath)
+        && (get(userPath).data.get('requires_email_verification', false) != true
+          || request.auth.token.email_verified == true);
+    }
+
     function pelangganMilikSaya(idPelanggan) {
       return signedIn()
         && idPelanggan is string
@@ -39,6 +47,7 @@ service cloud.firestore {
     function orderMilikCustomerRead(orderId) {
       let orderPath = /databases/$(database)/documents/orders/$(orderId);
       return isCustomer()
+        && customerEmailVerified()
         && exists(orderPath)
         && pelangganMilikSaya(get(orderPath).data.id_pelanggan);
     }
@@ -47,6 +56,7 @@ service cloud.firestore {
     function orderMilikCustomerWrite(orderId) {
       let orderPath = /databases/$(database)/documents/orders/$(orderId);
       return isCustomer()
+        && customerEmailVerified()
         && (
           (exists(orderPath)
             && pelangganMilikSaya(get(orderPath).data.id_pelanggan))
@@ -74,18 +84,22 @@ service cloud.firestore {
       allow create: if signedIn()
         && myUid() == uid
         && request.resource.data.role == 'customer'
-        && request.resource.data.uid == myUid();
+        && request.resource.data.uid == myUid()
+        && request.resource.data.get('requires_email_verification', false) == true;
       allow update, delete: if isAdmin();
     }
 
     match /pelanggan/{id} {
       allow read: if isAdmin()
         || isOwner()
-        || (isCustomer() && resource.data.uid == myUid());
+        || (isCustomer()
+          && customerEmailVerified()
+          && resource.data.uid == myUid());
       allow create: if isAdmin()
         || (signedIn() && request.resource.data.uid == myUid());
       allow update: if isAdmin()
         || (isCustomer()
+          && customerEmailVerified()
           && resource.data.uid == myUid()
           && request.resource.data.uid == myUid());
       allow delete: if isAdmin();
@@ -100,9 +114,11 @@ service cloud.firestore {
       allow read: if isAdmin()
         || isOwner()
         || (isCustomer()
+          && customerEmailVerified()
           && pelangganMilikSaya(resource.data.id_pelanggan));
       allow create: if isAdmin()
         || (isCustomer()
+          && customerEmailVerified()
           && pelangganMilikSaya(request.resource.data.id_pelanggan));
       allow update: if isAdmin();
       allow delete: if isAdmin()
@@ -151,9 +167,11 @@ service cloud.firestore {
       allow read: if isAdmin()
         || isOwner()
         || (isCustomer()
+          && customerEmailVerified()
           && pelangganMilikSaya(resource.data.id_pelanggan));
       allow create: if isAdmin()
         || (isCustomer()
+          && customerEmailVerified()
           && pelangganMilikSaya(request.resource.data.id_pelanggan));
       allow update, delete: if isAdmin();
     }

@@ -19,7 +19,13 @@ import {
 // Pendaftaran mandiri KHUSUS customer (sesuai permintaan).
 // Admin/owner tidak bisa daftar dari sini — dibuat via scripts/seed-users.mjs.
 export default function RegisterPage() {
-  const { registerCustomer, firebaseUser, role, loading } = useAuth();
+  const {
+    registerCustomer,
+    firebaseUser,
+    role,
+    loading,
+    needsEmailVerification,
+  } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState({
     nama: "",
@@ -40,9 +46,13 @@ export default function RegisterPage() {
   // Pengguna yang sesinya masih aktif tidak perlu melihat form daftar.
   useEffect(() => {
     if (loading || !firebaseUser) return;
+    if (needsEmailVerification) {
+      router.replace("/verify-email");
+      return;
+    }
     const target = resolveTarget(role);
     if (target) router.replace(target);
-  }, [loading, firebaseUser, role, router]);
+  }, [loading, firebaseUser, role, needsEmailVerification, router]);
 
   function set(key: keyof typeof form, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -55,9 +65,8 @@ export default function RegisterPage() {
     setSuccessMsg(null);
     try {
       await registerCustomer(form);
-      setSuccessMsg("Akun berhasil dibuat! Mengarahkan ke dashboard…");
-      // Brief delay to show success message before redirect
-      setTimeout(() => router.replace("/customer"), 800);
+      setSuccessMsg("Akun berhasil dibuat. Mengarahkan ke halaman verifikasi email…");
+      router.replace("/verify-email");
     } catch (err) {
       setMsg(pesanErrorAuth(err, "Gagal mendaftar. Coba lagi."));
     } finally {
@@ -85,9 +94,6 @@ export default function RegisterPage() {
             </h1>
           </div>
         </div>
-        <p className="mt-2 text-sm md:text-base text-zinc-500">
-          Daftar untuk mulai menghitung estimasi biaya dan memesan cetakan custom Anda.
-        </p>
         {/* suppressHydrationWarning: ekstensi browser (password manager dsb.)
             kadang menyentuh DOM form saat autofill. */}
         <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4 md:gap-5" suppressHydrationWarning>

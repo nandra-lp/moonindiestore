@@ -18,6 +18,8 @@ export function pesanErrorAuth(err: unknown, fallback = "Terjadi kesalahan. Coba
       return "Akun ini dinonaktifkan. Hubungi admin.";
     case "auth/too-many-requests":
       return "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.";
+    case "auth/email-already-verified":
+      return "Email akun ini sudah terverifikasi.";
     case "auth/network-request-failed":
       return "Periksa koneksi internetmu lalu coba lagi.";
     default:

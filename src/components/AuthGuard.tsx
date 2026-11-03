@@ -15,7 +15,7 @@ export function RequireRole({
   allow: Role[];
   children: ReactNode;
 }) {
-  const { role, loading, firebaseUser } = useAuth();
+  const { role, loading, firebaseUser, needsEmailVerification } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -24,15 +24,20 @@ export function RequireRole({
       router.replace("/login");
       return;
     }
+    if (needsEmailVerification) {
+      router.replace("/verify-email");
+      return;
+    }
     if (role && !allow.includes(role)) {
       router.replace("/unauthorized");
     }
-  }, [loading, firebaseUser, role, allow, router]);
+  }, [loading, firebaseUser, role, needsEmailVerification, allow, router]);
 
   if (loading) {
     return <p className="p-8 text-sm text-zinc-500">Memeriksa sesi…</p>;
   }
   if (!firebaseUser) return null;
+  if (needsEmailVerification) return null;
   if (role && !allow.includes(role)) return null;
   return <>{children}</>;
 }

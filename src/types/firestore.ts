@@ -29,6 +29,8 @@ export interface UserDoc {
   // Menyamai FK id_pelanggan pada ERD.
   id_pelanggan?: string | null;
   nama: string;
+  // Akun customer baru wajib memverifikasi email; tidak ada pada dokumen lama.
+  requires_email_verification?: boolean;
   createdAt: Timestamp;
 }
 

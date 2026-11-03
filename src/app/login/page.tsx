@@ -18,7 +18,7 @@ import {
 } from "@/components/ui";
 
 export default function LoginPage() {
-  const { login, firebaseUser, role, loading } = useAuth();
+  const { login, firebaseUser, role, loading, needsEmailVerification } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,9 +35,13 @@ export default function LoginPage() {
   // Pengguna yang sesinya masih aktif tidak perlu melihat form login.
   useEffect(() => {
     if (loading || !firebaseUser) return;
+    if (needsEmailVerification) {
+      router.replace("/verify-email");
+      return;
+    }
     const target = resolveTarget(role);
     if (target) router.replace(target);
-  }, [loading, firebaseUser, role, router]);
+  }, [loading, firebaseUser, role, needsEmailVerification, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,11 +49,15 @@ export default function LoginPage() {
     setMsg(null);
     setResetOk(null);
     try {
-      const role = await login(email.trim(), password);
-      const target = resolveTarget(role);
+      const result = await login(email.trim(), password);
+      if (result.needsEmailVerification) {
+        router.replace("/verify-email");
+        return;
+      }
+      const target = resolveTarget(result.role);
       if (!target) {
         setMsg(
-          `Login berhasil, tetapi role "${String(role)}" tidak dikenal. Minta admin memperbaiki field role di dokumen users Firestore menjadi salah satu: admin, owner, customer (huruf kecil semua, tanpa spasi).`,
+          `Login berhasil, tetapi role "${String(result.role)}" tidak dikenal. Minta admin memperbaiki field role di dokumen users Firestore menjadi salah satu: admin, owner, customer (huruf kecil semua, tanpa spasi).`,
         );
         return;
       }
