@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import qrisImage from "@/images/mis-qris.jpeg";
 import { RequireRole } from "@/components/AuthGuard";
 import { DashboardShell } from "@/components/dashboard/Shell";
 import { useAuth } from "@/context/AuthContext";
@@ -232,11 +234,11 @@ function DetailInner() {
         </dl>
       </div>
 
-      {order.metode_pembayaran === "bca" && (
+      {(order.metode_pembayaran === "bca" || order.metode_pembayaran === "qris") && (
         <section aria-labelledby="payment-heading" className="rounded-xl border border-zinc-200 bg-white p-5 md:p-6">
           <h2 id="payment-heading" className="flex items-center gap-2 text-lg font-semibold text-ink">
             <CreditCard className="h-5 w-5 text-zinc-400" aria-hidden="true" />
-            Pembayaran BCA
+            Pembayaran {order.metode_pembayaran === "qris" ? "QRIS" : "BCA"}
           </h2>
           {order.status_pembayaran === "terverifikasi" ? (
             <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm font-medium text-green-700">
@@ -252,26 +254,50 @@ function DetailInner() {
             </p>
           ) : (
             <>
-              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <dt className="text-sm text-zinc-500">Bank</dt>
-                  <dd className="font-medium text-ink">BCA</dd>
+              {order.metode_pembayaran === "qris" ? (
+                <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                  <Image
+                    src={qrisImage}
+                    alt="Kode QRIS Moon Indie Store untuk pembayaran"
+                    width={240}
+                    height={240}
+                    className="h-60 w-60 rounded-xl border border-zinc-200 object-contain"
+                  />
+                  <dl className="space-y-2">
+                    <div>
+                      <dt className="text-sm text-zinc-500">Total pembayaran</dt>
+                      <dd className="font-mono text-lg font-semibold text-ink">{formatRupiah(order.total_harga)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-zinc-500">Metode</dt>
+                      <dd className="font-medium text-ink">QRIS</dd>
+                    </div>
+                  </dl>
                 </div>
-                <div>
-                  <dt className="text-sm text-zinc-500">Nomor rekening</dt>
-                  <dd className="font-mono font-semibold text-ink">4750477785</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-zinc-500">Atas nama</dt>
-                  <dd className="font-medium text-ink">Rafsan Jani</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-zinc-500">Total</dt>
-                  <dd className="font-mono font-semibold text-ink">{formatRupiah(order.total_harga)}</dd>
-                </div>
-              </dl>
+              ) : (
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-sm text-zinc-500">Bank</dt>
+                    <dd className="font-medium text-ink">BCA</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-zinc-500">Nomor rekening</dt>
+                    <dd className="font-mono font-semibold text-ink">4750477785</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-zinc-500">Atas nama</dt>
+                    <dd className="font-medium text-ink">Rafsan Jani</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-zinc-500">Total</dt>
+                    <dd className="font-mono font-semibold text-ink">{formatRupiah(order.total_harga)}</dd>
+                  </div>
+                </dl>
+              )}
               <p className="mt-3 text-sm text-zinc-600">
-                Transfer sesuai total yang sudah dikonfirmasi admin. Setelah itu, unggah bukti untuk diperiksa sebelum pesanan dilanjutkan.
+                {order.metode_pembayaran === "qris"
+                  ? "Bayar sesuai total yang sudah dikonfirmasi admin. Setelah itu, unggah bukti untuk diperiksa sebelum pesanan dilanjutkan."
+                  : "Transfer sesuai total yang sudah dikonfirmasi admin. Setelah itu, unggah bukti untuk diperiksa sebelum pesanan dilanjutkan."}
               </p>
 
               {order.bukti_pembayaran_url && (

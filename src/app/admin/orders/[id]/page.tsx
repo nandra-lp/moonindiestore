@@ -380,11 +380,11 @@ function AdminDetailInner() {
         </dl>
       </div>
 
-      {order.metode_pembayaran === "bca" && (
+      {(order.metode_pembayaran === "bca" || order.metode_pembayaran === "qris") && (
         <section aria-labelledby="payment-heading" className="rounded-xl border border-zinc-200 bg-white p-5 md:p-6">
           <h2 id="payment-heading" className="flex items-center gap-2 text-lg font-semibold text-ink">
             <CreditCard className="h-5 w-5 text-zinc-400" aria-hidden="true" />
-            Pembayaran BCA
+            Pembayaran {order.metode_pembayaran === "qris" ? "QRIS" : "BCA"}
           </h2>
           <p className="mt-2 text-sm text-zinc-600">
             Status: <strong className="text-ink">{order.status_pembayaran ?? "menunggu"}</strong>

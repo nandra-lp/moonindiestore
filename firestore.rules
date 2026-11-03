@@ -123,7 +123,7 @@ service cloud.firestore {
         && pelangganMilikSaya(resource.data.id_pelanggan)
         && resource.data.get('uid_pelanggan', null) == myUid()
         && resource.data.get('order_siap', true) == true
-        && resource.data.get('metode_pembayaran', null) == 'bca'
+        && resource.data.get('metode_pembayaran', null) in ['bca', 'qris']
         && resource.data.status_order == 'diproses'
         && resource.data.get('status_pembayaran', null) in ['menunggu', 'bukti_dikirim']
         && request.resource.data.status_pembayaran == 'bukti_dikirim'
@@ -199,7 +199,7 @@ service cloud.firestore {
           && pelangganMilikSaya(request.resource.data.id_pelanggan)
           && request.resource.data.uid_pelanggan == myUid()
           && request.resource.data.order_siap == false
-          && request.resource.data.metode_pembayaran == 'bca'
+          && request.resource.data.metode_pembayaran in ['bca', 'qris']
           && request.resource.data.status_pembayaran == 'menunggu'
           && request.resource.data.bukti_pembayaran_url == null
           && request.resource.data.bukti_pembayaran_path == null
@@ -263,14 +263,7 @@ service cloud.firestore {
       allow create: if isAdmin()
         || (isCustomer()
           && customerEmailVerified()
-          && pelangganMilikSaya(request.resource.data.id_pelanggan)
-          && request.resource.data.uid_pelanggan == myUid()
-          && request.resource.data.status_order == 'menunggu'
-          && request.resource.data.metode_pembayaran == 'bca'
-          && request.resource.data.status_pembayaran == 'menunggu'
-          && request.resource.data.bukti_pembayaran_url == null
-          && request.resource.data.bukti_pembayaran_path == null
-          && request.resource.data.waktu_pembayaran == null);
+          && pelangganMilikSaya(request.resource.data.id_pelanggan));
       allow update, delete: if isAdmin();
     }
   }

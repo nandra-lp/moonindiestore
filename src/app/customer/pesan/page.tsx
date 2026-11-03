@@ -2,7 +2,9 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Timestamp } from "firebase/firestore";
+import qrisImage from "@/images/mis-qris.jpeg";
 import { RequireRole } from "@/components/AuthGuard";
 import { DashboardShell } from "@/components/dashboard/Shell";
 import { useAuth } from "@/context/AuthContext";
@@ -427,7 +429,9 @@ function PesanInner() {
                   <h3 id="payment-heading" className="text-base font-semibold text-ink">
                     Metode pembayaran
                   </h3>
-                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gold bg-gold/10 p-4">
+                  <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                    paymentMethod === "bca" ? "border-gold bg-gold/10" : "border-zinc-200"
+                  }`}>
                     <input
                       type="radio"
                       name="metode-pembayaran"
@@ -443,8 +447,35 @@ function PesanInner() {
                       </span>
                     </span>
                   </label>
+                  <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                    paymentMethod === "qris" ? "border-gold bg-gold/10" : "border-zinc-200"
+                  }`}>
+                    <input
+                      type="radio"
+                      name="metode-pembayaran"
+                      value="qris"
+                      checked={paymentMethod === "qris"}
+                      onChange={() => setPaymentMethod("qris")}
+                      className="mt-1 accent-ink"
+                    />
+                    <span className="flex items-start gap-3">
+                      <Image
+                        src={qrisImage}
+                        alt="QRIS Moon Indie Store"
+                        width={72}
+                        height={72}
+                        className="h-[72px] w-[72px] rounded-lg border border-zinc-200 object-contain"
+                      />
+                      <span>
+                        <span className="block font-semibold text-ink">QRIS</span>
+                        <span className="mt-1 block text-sm text-zinc-600">
+                          Bayar dengan memindai kode QRIS.
+                        </span>
+                      </span>
+                    </span>
+                  </label>
                   <p className="text-sm text-zinc-500">
-                    GoPay dan QRIS belum tersedia. Tunggu admin mengonfirmasi pesanan dan total akhir sebelum melakukan transfer.
+                    GoPay belum tersedia. Tunggu admin mengonfirmasi pesanan dan total akhir sebelum membayar.
                   </p>
                 </section>
 

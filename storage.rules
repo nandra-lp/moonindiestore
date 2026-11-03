@@ -40,7 +40,7 @@ service firebase.storage {
       let order = firestore.get(
         /databases/(default)/documents/orders/$(orderId)
       ).data;
-      return order.metode_pembayaran == 'bca'
+      return order.metode_pembayaran in ['bca', 'qris']
         && order.status_order == 'diproses'
         && order.status_pembayaran in ['menunggu', 'bukti_dikirim'];
     }
