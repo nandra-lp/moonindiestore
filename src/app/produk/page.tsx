@@ -5,6 +5,7 @@ import Link from "next/link";
 import { listProduk, type WithDocId } from "@/lib/db";
 import { formatRupiah } from "@/lib/estimasi";
 import type { Produk } from "@/types/firestore";
+import { routeForRole, useAuth } from "@/context/AuthContext";
 import { ErrorBox, GhostButton, ProductThumb } from "@/components/ui";
 import { ArrowRight, Package } from "lucide-react";
 
@@ -39,6 +40,7 @@ function PriceDisplay({ harga, satuan }: { harga: number; satuan: string }) {
 }
 
 export default function KatalogPage() {
+  const { firebaseUser, role } = useAuth();
   const [rows, setRows] = useState<WithDocId<Produk>[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -71,12 +73,24 @@ export default function KatalogPage() {
   const filteredRows = jenisFilter
     ? rows.filter((p) => p.jenis_produk === jenisFilter)
     : rows;
+  const actionHref =
+    role === "customer"
+      ? "/customer/pesan"
+      : role
+        ? routeForRole(role)
+        : "/register";
+  const actionLabel =
+    role === "customer"
+      ? "Buat pesanan"
+      : firebaseUser && role
+        ? "Dashboard saya"
+        : "Daftar untuk memesan";
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <header className="mb-8 flex flex-col gap-5 border-b border-zinc-200 pb-7 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-2xl">
-          <p className="text-sm font-medium text-moon-blue">Katalog Moon Indie Store</p>
+          <p className="text-sm font-medium text-zinc-600">Katalog Moon Indie Store</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-moon-ink sm:text-4xl">
             Temukan produk untuk idemu
           </h1>
@@ -86,10 +100,10 @@ export default function KatalogPage() {
           </p>
         </div>
         <Link
-          href="/register"
+          href={actionHref}
           className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-moon-ink px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue"
         >
-          Mulai pesan
+          {actionLabel}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </header>

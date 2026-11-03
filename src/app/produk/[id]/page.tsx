@@ -155,35 +155,36 @@ export default function ProdukDetailPage() {
           Tentang produk ini
         </h2>
         <ul className="mt-4 divide-y divide-zinc-200 border-y border-zinc-200 text-sm leading-6 text-zinc-600 sm:grid sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-            <li className="flex items-start gap-3 py-4 sm:py-4">
-              <Sparkles className="mt-1 h-4 w-4 shrink-0 text-moon-yellow" aria-hidden="true" />
-              <span>
-                Jenis produk: <span className="font-medium text-moon-ink">{produk.jenis_produk}</span>
+          <li className="flex items-start gap-3 py-4 sm:py-4">
+            <Sparkles className="mt-1 h-4 w-4 shrink-0 text-moon-yellow" aria-hidden="true" />
+            <span>
+              Jenis produk:{" "}
+              <span className="font-medium text-moon-ink">{produk.jenis_produk}</span>
+            </span>
+          </li>
+          <li className="flex items-start gap-3 py-4 sm:px-5 sm:py-4">
+            <Tag className="mt-1 h-4 w-4 shrink-0 text-moon-blue" aria-hidden="true" />
+            <span>
+              Harga dasar:{" "}
+              <span className="font-medium text-moon-ink">
+                {formatRupiah(produk.harga_dasar)} / {produk.satuan}
               </span>
-            </li>
-            <li className="flex items-start gap-3 py-4 sm:px-5 sm:py-4">
-              <Tag className="mt-1 h-4 w-4 shrink-0 text-moon-blue" aria-hidden="true" />
-              <span>
-                Harga dasar:
-                <span className="font-medium text-moon-ink">
-                  {formatRupiah(produk.harga_dasar)} / {produk.satuan}
-                </span>
-              </span>
-            </li>
-            <li className="flex items-start gap-3 py-4 sm:border-t sm:border-zinc-200 sm:py-4">
-              <RotateCcw className="mt-1 h-4 w-4 shrink-0 text-moon-pink" aria-hidden="true" />
-              <span>
-                Desain custom:
-                <span className="font-medium text-moon-ink">Dapat disesuaikan</span>
-              </span>
-            </li>
-            <li className="flex items-start gap-3 py-4 sm:border-t sm:border-zinc-200 sm:px-5 sm:py-4">
-              <Package className="mt-1 h-4 w-4 shrink-0 text-zinc-500" aria-hidden="true" />
-              <span>
-                Pengiriman:
-                <span className="font-medium text-moon-ink">Seluruh Indonesia</span>
-              </span>
-            </li>
+            </span>
+          </li>
+          <li className="flex items-start gap-3 py-4 sm:border-t sm:border-zinc-200 sm:py-4">
+            <RotateCcw className="mt-1 h-4 w-4 shrink-0 text-moon-pink" aria-hidden="true" />
+            <span>
+              Desain custom:{" "}
+              <span className="font-medium text-moon-ink">Dapat disesuaikan</span>
+            </span>
+          </li>
+          <li className="flex items-start gap-3 py-4 sm:border-t sm:border-zinc-200 sm:px-5 sm:py-4">
+            <Package className="mt-1 h-4 w-4 shrink-0 text-zinc-500" aria-hidden="true" />
+            <span>
+              Pengiriman:{" "}
+              <span className="font-medium text-moon-ink">Seluruh Indonesia</span>
+            </span>
+          </li>
         </ul>
       </section>
 
@@ -198,7 +199,7 @@ export default function ProdukDetailPage() {
             </div>
             <Link
               href="/produk"
-              className="hidden min-h-10 items-center gap-1 text-sm font-medium text-moon-blue hover:text-moon-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue sm:inline-flex"
+              className="hidden min-h-10 items-center gap-1 text-sm font-medium text-zinc-700 hover:text-moon-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue sm:inline-flex"
             >
               Semua produk
               <ArrowRight className="h-4 w-4" aria-hidden="true" />

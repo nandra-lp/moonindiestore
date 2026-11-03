@@ -60,7 +60,7 @@ function NavLink({
       href={href}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
-      className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-sm transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue min-h-[44px] ${
+      className={`flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-full px-3 py-2.5 text-sm transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue ${
         active ? activeClasses : inactiveClasses
       }`}
     >
@@ -133,7 +133,7 @@ export function Navbar() {
             <>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-moon-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue hidden sm:inline-flex min-h-[44px]"
+                className="hidden min-h-[44px] items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-moon-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue sm:flex"
               >
                 Masuk
               </Link>
