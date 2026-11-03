@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { listProduk, type WithDocId } from "@/lib/db";
 import { formatRupiah } from "@/lib/estimasi";
 import type { Produk } from "@/types/firestore";
-import { ErrorBox, GhostButton } from "@/components/ui";
+import { ErrorBox, GhostButton, ProductThumb } from "@/components/ui";
 import { ArrowRight, Package, Sparkles, Tag, RotateCcw } from "lucide-react";
 
 const PREVIEW_COUNT = 8;
@@ -60,28 +59,17 @@ function BadgeIcon({ type }: { type: ProductBadge }) {
 function ProductImage({
   url,
   nama,
+  jenis,
   badge,
 }: {
   url?: string | null;
   nama: string;
+  jenis: string;
   badge: ProductBadge;
 }) {
   return (
     <div className="relative aspect-square overflow-hidden bg-zinc-100">
-      {url ? (
-        <Image
-          src={url}
-          alt={nama}
-          fill
-          sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-moon-yellow/25 text-zinc-300" aria-label={`Belum ada gambar untuk ${nama}`}>
-          <Package className="h-12 w-12" aria-hidden="true" />
-        </div>
-      )}
+      <ProductThumb url={url} nama={nama} jenis={jenis} fill />
       {badge && (
         <div className="absolute top-2 left-2 z-10">
           <BadgeIcon type={badge} />
@@ -194,7 +182,12 @@ export function KatalogPreview() {
             {rows.map((p) => (
               <li key={p.id}>
                 <article className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_12px_32px_rgba(10,10,10,0.10)]">
-                  <ProductImage url={p.gambar_url} nama={p.nama_produk} badge={p.badge} />
+                  <ProductImage
+                    url={p.gambar_url}
+                    nama={p.nama_produk}
+                    jenis={p.jenis_produk}
+                    badge={p.badge}
+                  />
 
                   <div className="flex flex-1 flex-col p-4">
                     <h3 className="line-clamp-2 min-h-[3rem] text-base font-semibold leading-snug text-moon-ink transition-colors group-hover:text-moon-blue">

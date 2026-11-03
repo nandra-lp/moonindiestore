@@ -136,6 +136,7 @@ function EstimasiInner() {
                     <ProductThumb
                       url={p.gambar_url}
                       nama={p.nama_produk}
+                      jenis={p.jenis_produk}
                       size="lg"
                     />
                     <span className="mt-3 w-full truncate text-sm font-bold text-moon-ink transition-colors group-hover:text-moon-blue">

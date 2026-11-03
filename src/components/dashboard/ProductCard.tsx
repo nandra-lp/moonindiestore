@@ -3,12 +3,10 @@
 // Kartu produk katalog: gambar sebagai fokus, harga menonjol, aksi kelola.
 // Gambar rusak otomatis jatuh ke placeholder (tanpa ikon rusak).
 
-import { useState } from "react";
-import { Package } from "lucide-react";
 import { formatRupiah } from "@/lib/estimasi";
 import type { Produk } from "@/types/firestore";
 import type { WithDocId } from "@/lib/db";
-import { DangerButton, GhostButton } from "@/components/ui";
+import { DangerButton, GhostButton, ProductThumb } from "@/components/ui";
 
 export function ProductCard({
   produk,
@@ -21,34 +19,15 @@ export function ProductCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  // URL yang pernah gagal dimuat — tanpa effect, cukup bandingkan string.
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const showPlaceholder = !produk.gambar_url || failedUrl === produk.gambar_url;
-
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_12px_32px_rgba(10,10,10,0.10)] focus-within:border-zinc-300 focus-within:shadow-[0_12px_32px_rgba(10,10,10,0.10)]">
       <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
-        {showPlaceholder ? (
-          <span
-            role="img"
-            aria-label={`Belum ada gambar untuk ${produk.nama_produk}`}
-            className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-moon-yellow/15 text-zinc-400"
-          >
-            <Package className="h-9 w-9" strokeWidth={1.5} aria-hidden="true" />
-            <span className="px-4 text-center text-[11px] font-medium">
-              Belum ada foto
-            </span>
-          </span>
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element -- URL Storage dinamis
-          <img
-            src={produk.gambar_url ?? ""}
-            alt={produk.nama_produk}
-            loading="lazy"
-            onError={() => setFailedUrl(produk.gambar_url ?? null)}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          />
-        )}
+        <ProductThumb
+          url={produk.gambar_url}
+          nama={produk.nama_produk}
+          jenis={produk.jenis_produk}
+          fill
+        />
         <span className="absolute left-3 top-3 max-w-[60%] truncate rounded-full bg-moon-ink/85 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
           {produk.jenis_produk}
         </span>

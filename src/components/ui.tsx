@@ -14,6 +14,7 @@ import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import type { Role, StatusOrder } from "@/types/firestore";
+import { getProductImage } from "@/lib/product-images";
 
 function cn(...classes: (string | undefined | null | boolean)[]) {
   return classes.filter(Boolean).join(" ");
@@ -575,18 +576,42 @@ export function DesainCustomView({
 export function ProductThumb({
   url,
   nama,
+  jenis,
   size = "md",
   fill = false,
 }: {
   url?: string | null;
   nama: string;
+  jenis?: string;
   size?: "sm" | "md" | "lg";
   /** fill=true: gambar mengisi penuh kontainer (untuk kartu katalog), bukan kotak thumbnail. */
   fill?: boolean;
 }) {
-  if (!url) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const fallbackImage = getProductImage(nama, jenis);
+  const shouldShowLocalImage =
+    fallbackImage?.overrideUploaded || !url || failedUrl === url;
+
+  if (shouldShowLocalImage) {
+    if (fallbackImage) {
+      return (
+        <Image
+          src={fallbackImage.image}
+          alt={nama}
+          fill={fill}
+          sizes={fill ? "(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw" : undefined}
+          className={
+            fill
+              ? "h-full w-full object-cover"
+              : `shrink-0 rounded-xl border border-zinc-200 object-cover ${thumbSizes[size]}`
+          }
+        />
+      );
+    }
+
     return (
       <span
+        role="img"
         className={
           fill
             ? "flex h-full w-full items-center justify-center bg-moon-yellow/25 text-4xl"
@@ -604,6 +629,7 @@ export function ProductThumb({
       src={url}
       alt={nama}
       loading="lazy"
+      onError={() => setFailedUrl(url)}
       className={
         fill
           ? "h-full w-full object-cover"

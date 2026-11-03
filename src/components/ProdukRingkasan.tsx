@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { listProduk, type WithDocId } from "@/lib/db";
 import { formatRupiah } from "@/lib/estimasi";
 import type { Produk } from "@/types/firestore";
-import { ErrorBox, GhostButton } from "@/components/ui";
+import { ErrorBox, GhostButton, ProductThumb } from "@/components/ui";
 import { ArrowRight, Package } from "lucide-react";
 
 export function ProdukRingkasan({ maxItems = 4, title = "Produk Kami" }: { maxItems?: number; title?: string }) {
@@ -96,20 +95,12 @@ export function ProdukRingkasan({ maxItems = 4, title = "Produk Kami" }: { maxIt
               <li key={p.id}>
                 <article className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_12px_32px_rgba(10,10,10,0.10)]">
                   <div className="relative aspect-square overflow-hidden bg-zinc-100">
-                    {p.gambar_url ? (
-                      <Image
-                        src={p.gambar_url}
-                        alt={p.nama_produk}
-                        fill
-                        sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-moon-yellow/25 text-zinc-300" aria-label={`Belum ada gambar untuk ${p.nama_produk}`}>
-                        <Package className="h-12 w-12" aria-hidden="true" />
-                      </div>
-                    )}
+                    <ProductThumb
+                      url={p.gambar_url}
+                      nama={p.nama_produk}
+                      jenis={p.jenis_produk}
+                      fill
+                    />
                   </div>
 
                   <div className="flex flex-1 flex-col p-4 sm:p-5">

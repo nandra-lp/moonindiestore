@@ -267,7 +267,12 @@ function PesanInner() {
                         <Check className="h-3 w-3" strokeWidth={3} />
                       </span>
                     )}
-                    <ProductThumb url={p.gambar_url} nama={p.nama_produk} size="lg" />
+                    <ProductThumb
+                      url={p.gambar_url}
+                      nama={p.nama_produk}
+                      jenis={p.jenis_produk}
+                      size="lg"
+                    />
                     <div className="mt-4 text-center">
                       <p className="font-medium text-ink line-clamp-1">{p.nama_produk}</p>
                       <p className="mt-2 text-sm text-zinc-500 font-mono">
