@@ -7,6 +7,7 @@ import { routeForRole, useAuth } from "@/context/AuthContext";
 import { Badge, BrandMark, roleTone } from "@/components/ui";
 import {
   DASHBOARD_NAV,
+  isNavActive,
   type DashboardNavItem,
 } from "@/components/dashboard/nav";
 
@@ -23,7 +24,7 @@ import {
 
 const GUEST_ITEMS: DashboardNavItem[] = [
   { href: "/", label: "Beranda", icon: Home },
-  { href: "/#katalog", label: "Katalog", icon: Package },
+  { href: "/produk", label: "Katalog", icon: Package },
 ];
 
 function Logo() {
@@ -92,11 +93,6 @@ export function Navbar() {
     setMenuOpen(false);
   }
 
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
-    return pathname === href || pathname?.startsWith(`${href}/`);
-  };
-
   const displayName =
     profile?.nama ?? firebaseUser?.displayName ?? firebaseUser?.email ?? "Akun";
   const initial = displayName.trim().charAt(0).toUpperCase() || "?";
@@ -117,7 +113,7 @@ export function Navbar() {
         <Logo />
 
         {/* Navigasi desktop */}
-        <nav aria-label="Navigasi utama" className="hidden items-center gap-1.5 md:flex">
+        <nav aria-label="Navigasi utama" className="hidden items-center gap-1.5 xl:flex">
           {items.map((it) => (
             <NavLink
               key={it.href}
@@ -125,7 +121,7 @@ export function Navbar() {
               label={it.label}
               icon={it.icon}
               onNavigate={closeMenus}
-              active={isActive(it.href)}
+              active={isNavActive(pathname, it.href)}
             />
           ))}
         </nav>
@@ -149,7 +145,7 @@ export function Navbar() {
               </Link>
             </>
           ) : (
-            <div className="relative hidden md:block">
+            <div className="relative hidden xl:block">
               <button
                 onClick={() => setMenuOpen((v) => !v)}
                 aria-expanded={menuOpen}
@@ -251,7 +247,7 @@ export function Navbar() {
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
             aria-controls="mobile-nav-panel"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 text-moon-ink transition-colors hover:bg-zinc-100 hover:border-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue md:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 text-moon-ink transition-colors hover:bg-zinc-100 hover:border-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue xl:hidden"
           >
             {mobileOpen ? (
               <X className="h-6 w-6" aria-hidden="true" />
@@ -267,7 +263,7 @@ export function Navbar() {
         <nav
           id="mobile-nav-panel"
           aria-label="Navigasi mobile"
-          className="animate-slide-down border-t border-zinc-100 bg-white px-4 pb-5 pt-4 shadow-xl md:hidden"
+          className="animate-slide-down border-t border-zinc-100 bg-white px-4 pb-5 pt-4 shadow-xl xl:hidden"
         >
           {/* User section at top when logged in */}
           {firebaseUser && (
@@ -298,7 +294,7 @@ export function Navbar() {
           <div className="flex flex-col gap-1">
             {items.map((it) => {
               const Icon = it.icon;
-              const active = isActive(it.href);
+              const active = isNavActive(pathname, it.href);
               return (
                 <Link
                   key={it.href}

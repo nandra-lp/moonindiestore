@@ -35,6 +35,7 @@ export const DASHBOARD_NAV: Record<Role, DashboardNavItem[]> = {
     { href: "/customer", label: "Dashboard", icon: LayoutDashboard },
     { href: "/customer/estimasi", label: "Estimasi", icon: Calculator },
     { href: "/customer/orders", label: "Pesanan", icon: ShoppingCart },
+    { href: "/produk", label: "Katalog", icon: Package },
     { href: "/customer/pesan", label: "Pesan", icon: PlusCircle },
     { href: "/customer/profile", label: "Profil", icon: User },
   ],
