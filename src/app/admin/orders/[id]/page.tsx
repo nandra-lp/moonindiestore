@@ -5,12 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 import { RequireRole } from "@/components/AuthGuard";
 import { DashboardShell } from "@/components/dashboard/Shell";
-import { AlertCircle, ClipboardList, Factory, Palette, Send, Check, Circle, CheckCircle, MinusCircle, Clock, Package, FileText } from "lucide-react";
+import { AlertCircle, ClipboardList, Factory, Palette, Send, Check, Circle, CheckCircle, MinusCircle, Clock, Package, FileText, MessageCircle, Phone } from "lucide-react";
 import {
   addTracking,
   createProduksi,
   updateProduksi,
   deleteDocById,
+  getPelanggan,
   getOrder,
   listDetailByOrder,
   listProduksiByOrder,
@@ -25,6 +26,7 @@ import { LABEL_TAHAP, TAHAP_PRODUKSI, formatRupiah, formatTanggal, hitungProgres
 import type {
   DetailOrder,
   Order,
+  Pelanggan,
   Produksi,
   TrackingOrder,
 } from "@/types/firestore";
@@ -55,6 +57,11 @@ function AdminDetailInner() {
   const id = params.id;
   const router = useRouter();
   const [order, setOrder] = useState<WithDocId<Order> | null>(null);
+  const [customerContact, setCustomerContact] = useState<{
+    orderId: string;
+    customer: Pelanggan | null;
+    failed: boolean;
+  } | null>(null);
   const [detail, setDetail] = useState<WithDocId<DetailOrder>[]>([]);
   const [produksi, setProduksi] = useState<WithDocId<Produksi>[]>([]);
   const [tracking, setTracking] = useState<WithDocId<TrackingOrder>[]>([]);
@@ -67,6 +74,15 @@ function AdminDetailInner() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const namaPelanggan = usePelangganMap();
   const namaProduk = useProdukMap();
+  const customerForOrder =
+    customerContact?.orderId === order?.id ? customerContact : null;
+  const customerPhone = customerForOrder?.customer?.no_hp.trim() ?? "";
+  const whatsappNumber = customerPhone.replace(/\D/g, "");
+  const normalizedWhatsappNumber = whatsappNumber.startsWith("0")
+    ? `62${whatsappNumber.slice(1)}`
+    : whatsappNumber.startsWith("8")
+      ? `62${whatsappNumber}`
+      : whatsappNumber;
 
   function pesanError(err: unknown, konteks: string) {
     setMsg(`${konteks}: ${err instanceof Error ? err.message : "Terjadi kesalahan."}`);
@@ -106,6 +122,17 @@ function AdminDetailInner() {
       })
       .catch(() => setNotFound(true));
   }, [id]);
+
+  useEffect(() => {
+    if (!order?.id_pelanggan) return;
+    getPelanggan(order.id_pelanggan)
+      .then((customer) =>
+        setCustomerContact({ orderId: order.id, customer, failed: false }),
+      )
+      .catch(() =>
+        setCustomerContact({ orderId: order.id, customer: null, failed: true }),
+      );
+  }, [order?.id, order?.id_pelanggan]);
 
   async function tambahProduksi(status: Produksi["status_produksi"]) {
     if (!id) return;
@@ -266,10 +293,43 @@ function AdminDetailInner() {
 
       {/* Order Meta Bar */}
       <div className="rounded-xl border border-zinc-200 bg-cream/50 p-4 md:p-5">
-        <dl className="grid gap-3 sm:grid-cols-2 md:grid-cols-4 text-sm">
+        <dl className="grid gap-3 sm:grid-cols-2 md:grid-cols-5 text-sm">
           <div>
             <dt className="text-zinc-500">Pelanggan</dt>
             <dd className="mt-0.5 font-medium text-ink">{namaPelanggan[order.id_pelanggan] ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">No. HP customer</dt>
+            {customerPhone ? (
+              <dd className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <a
+                  href={`tel:${customerPhone}`}
+                  className="inline-flex items-center gap-1.5 font-medium text-ink hover:text-cyan"
+                >
+                  <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+                  {customerPhone}
+                </a>
+                {normalizedWhatsappNumber.length >= 10 && (
+                  <a
+                    href={`https://wa.me/${normalizedWhatsappNumber}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 transition-colors hover:bg-green-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                    WhatsApp
+                  </a>
+                )}
+              </dd>
+            ) : (
+              <dd className="mt-0.5 text-zinc-500">
+                {customerForOrder?.failed
+                  ? "Gagal memuat nomor"
+                  : customerForOrder?.customer
+                    ? "Belum diisi"
+                    : "Memuat…"}
+              </dd>
+            )}
           </div>
           <div>
             <dt className="text-zinc-500">Tanggal order</dt>
