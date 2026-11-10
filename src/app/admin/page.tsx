@@ -96,16 +96,23 @@ function AdminInner() {
         />
       </div>
 
-      <div className="mt-8">
-        <SectionHead title="Order terbaru" live />
-      </div>
-      <div className="mt-3">
-        <FilterPills
-          options={FILTERS}
-          value={filter}
-          counts={counts}
-          onChange={setFilter}
+      <div className="mt-8 border-b border-zinc-200 pb-4">
+        <SectionHead
+          title="Order terbaru"
+          action={
+            <span className="text-xs font-medium tabular-nums text-zinc-500">
+              {filtered.length} dari {orders.length} pesanan
+            </span>
+          }
         />
+        <div className="mt-4">
+          <FilterPills
+            options={FILTERS}
+            value={filter}
+            counts={counts}
+            onChange={setFilter}
+          />
+        </div>
       </div>
 
       {!loaded ? (

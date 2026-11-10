@@ -176,6 +176,10 @@ function DetailInner() {
         setProofError(
           "Firestore menolak perubahan. Pastikan pesanan berstatus diproses, akun customer terverifikasi, dan aturan Firestore terbaru sudah dipublikasikan."
         );
+      } else if (code === "storage/upload-stalled") {
+        setProofError(
+          "Unggahan dihentikan karena tidak ada progres selama 60 detik. Periksa koneksi internet, lalu kirim ulang bukti."
+        );
       } else if (
         code === "storage/retry-limit-exceeded" ||
         code === "storage/network-request-failed"

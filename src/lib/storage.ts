@@ -15,6 +15,7 @@ import { storage } from "@/lib/firebase/config";
 export const MAX_GAMBAR_BYTES = 2 * 1024 * 1024; // 2 MB (sama dengan storage.rules)
 export const MAX_DESAIN_BYTES = 10 * 1024 * 1024; // 10 MB (sama dengan storage.rules)
 export const MAX_BUKTI_PEMBAYARAN_BYTES = 5 * 1024 * 1024;
+const BATAS_UPLOAD_TANPA_PROGRES_MS = 60_000;
 const TIPE_BUKTI_PEMBAYARAN_OK = ["image/jpeg", "image/png", "image/webp"];
 
 export function validasiGambar(file: File): string | null {
@@ -86,20 +87,52 @@ export async function uploadBuktiPembayaran(
   const task = uploadBytesResumable(fileRef, file, { contentType: file.type });
 
   return new Promise((resolve, reject) => {
-    task.on(
+    let unsubscribe = () => {};
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    const resetTimeout = () => {
+      if (timeout !== null) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        task.cancel();
+        unsubscribe();
+        reject(
+          Object.assign(
+            new Error("Tidak ada progres unggahan selama 60 detik."),
+            { code: "storage/upload-stalled" }
+          )
+        );
+      }, BATAS_UPLOAD_TANPA_PROGRES_MS);
+    };
+    const finish = () => {
+      if (timeout !== null) clearTimeout(timeout);
+      unsubscribe();
+    };
+
+    resetTimeout();
+    unsubscribe = task.on(
       "state_changed",
       (snapshot) => {
+        resetTimeout();
         const progress =
           snapshot.totalBytes === 0
             ? 0
             : Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
         onProgress?.(progress);
       },
-      reject,
+      (error) => {
+        finish();
+        reject(error);
+      },
       () => {
+        resetTimeout();
         getDownloadURL(task.snapshot.ref)
-          .then((url) => resolve({ url, path }))
-          .catch(reject);
+          .then((url) => {
+            finish();
+            resolve({ url, path });
+          })
+          .catch((error: unknown) => {
+            finish();
+            reject(error);
+          });
       }
     );
   });
