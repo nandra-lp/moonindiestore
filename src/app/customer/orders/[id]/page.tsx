@@ -54,6 +54,12 @@ function DetailInner() {
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofError, setProofError] = useState<string | null>(null);
   const [proofSuccess, setProofSuccess] = useState<string | null>(null);
+  const [proofStage, setProofStage] = useState<"uploading" | "saving" | null>(null);
+  const [proofProgress, setProofProgress] = useState(0);
+  const [uploadedProof, setUploadedProof] = useState<{
+    file: File;
+    proof: { url: string; path: string };
+  } | null>(null);
   const namaProduk = useProdukMap();
 
   useEffect(() => {
@@ -120,9 +126,25 @@ function DetailInner() {
     setUploadingProof(true);
     setProofError(null);
     setProofSuccess(null);
+    setProofProgress(0);
     const form = event.currentTarget;
+    let hasUploadedProof = uploadedProof?.file === proofFile;
     try {
-      const proof = await uploadBuktiPembayaran(proofFile, order.id, firebaseUser.uid);
+      let proof =
+        uploadedProof?.file === proofFile ? uploadedProof.proof : null;
+      if (!proof) {
+        setProofStage("uploading");
+        proof = await uploadBuktiPembayaran(
+          proofFile,
+          order.id,
+          firebaseUser.uid,
+          setProofProgress
+        );
+        setUploadedProof({ file: proofFile, proof });
+        hasUploadedProof = true;
+      }
+
+      setProofStage("saving");
       await submitPaymentProof(order.id, proof);
       setOrder({
         ...order,
@@ -131,14 +153,44 @@ function DetailInner() {
         bukti_pembayaran_path: proof.path,
       });
       setProofFile(null);
+      setUploadedProof(null);
       form.reset();
       setProofSuccess("Bukti pembayaran berhasil dikirim dan sedang menunggu pemeriksaan admin.");
     } catch (err) {
-      setProofError(
-        err instanceof Error ? err.message : "Gagal mengirim bukti pembayaran."
-      );
+      const code =
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        typeof err.code === "string"
+          ? err.code
+          : "";
+      if (code === "storage/unauthorized") {
+        setProofError(
+          "Firebase Storage menolak file. Pastikan pesanan berstatus diproses, akun customer terverifikasi, dan aturan Storage terbaru sudah dipublikasikan."
+        );
+      } else if (code === "permission-denied" && hasUploadedProof) {
+        setProofError(
+          "File sudah terunggah, tetapi Firestore menolak penyimpanan status pembayaran. Periksa status pesanan dan aturan Firestore; setelah diperbaiki, kirim ulang untuk menyimpan status tanpa mengunggah file lagi."
+        );
+      } else if (code === "permission-denied") {
+        setProofError(
+          "Firestore menolak perubahan. Pastikan pesanan berstatus diproses, akun customer terverifikasi, dan aturan Firestore terbaru sudah dipublikasikan."
+        );
+      } else if (
+        code === "storage/retry-limit-exceeded" ||
+        code === "storage/network-request-failed"
+      ) {
+        setProofError(
+          "Koneksi terputus saat mengirim bukti. Periksa jaringan, lalu pilih kirim lagi."
+        );
+      } else {
+        setProofError(
+          err instanceof Error ? err.message : "Gagal mengirim bukti pembayaran."
+        );
+      }
     } finally {
       setUploadingProof(false);
+      setProofStage(null);
     }
   }
 
@@ -149,18 +201,23 @@ function DetailInner() {
 
     if (!file) {
       setProofFile(null);
+      setUploadedProof(null);
+      setProofProgress(0);
       return;
     }
 
     const validationError = validasiBuktiPembayaran(file);
     if (validationError) {
       setProofFile(null);
+      setUploadedProof(null);
       setProofError(validationError);
       event.currentTarget.value = "";
       return;
     }
 
     setProofFile(file);
+    setUploadedProof(null);
+    setProofProgress(0);
   }
 
   if (denied) {
@@ -432,6 +489,32 @@ function DetailInner() {
                     </span>
                   </p>
                 )}
+                {uploadingProof && proofStage === "uploading" && (
+                  <div
+                    className="space-y-2"
+                    role="progressbar"
+                    aria-label="Progres unggah bukti pembayaran"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={proofProgress}
+                  >
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="font-medium text-ink">Mengunggah file</span>
+                      <span className="tabular-nums text-zinc-600">{proofProgress}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-zinc-200">
+                      <div
+                        className="h-full rounded-full bg-moon-blue transition-[width] duration-200"
+                        style={{ width: `${proofProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {uploadingProof && proofStage === "saving" && (
+                  <p className="text-sm font-medium text-moon-blue" role="status">
+                    File berhasil diunggah. Menyimpan status pembayaran…
+                  </p>
+                )}
                 {proofError && (
                   <p className="rounded-lg border border-magenta/20 bg-magenta/5 p-3 text-sm text-magenta" role="alert">
                     {proofError}
@@ -448,8 +531,10 @@ function DetailInner() {
                   className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ink/90 focus-visible:outline-2 focus-visible:outline-moon-blue focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
                   <Upload className="h-4 w-4" aria-hidden="true" />
-                  {uploadingProof
+                  {proofStage === "uploading"
                     ? "Mengunggah bukti…"
+                    : proofStage === "saving"
+                      ? "Menyimpan status…"
                     : order.status_pembayaran === "bukti_dikirim"
                       ? "Kirim bukti pengganti"
                       : "Kirim bukti pembayaran"}

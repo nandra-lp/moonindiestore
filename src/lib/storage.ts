@@ -3,7 +3,13 @@
 // - Desain custom customer -> folder "desain/{id_order}/" (URL dicatat di
 //   detail_order.desain_url agar admin bisa meninjau & memproduksi).
 
-import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytes,
+  uploadBytesResumable,
+} from "firebase/storage";
 import { storage } from "@/lib/firebase/config";
 
 export const MAX_GAMBAR_BYTES = 2 * 1024 * 1024; // 2 MB (sama dengan storage.rules)
@@ -70,15 +76,33 @@ export async function uploadDesainCustom(
 export async function uploadBuktiPembayaran(
   file: File,
   orderId: string,
-  uid: string
+  uid: string,
+  onProgress?: (progress: number) => void
 ): Promise<{ url: string; path: string }> {
   const err = validasiBuktiPembayaran(file);
   if (err) throw new Error(err);
   const path = `bukti-pembayaran/${orderId}/${uid}`;
   const fileRef = ref(storage, path);
-  await uploadBytes(fileRef, file, { contentType: file.type });
-  const url = await getDownloadURL(fileRef);
-  return { url, path };
+  const task = uploadBytesResumable(fileRef, file, { contentType: file.type });
+
+  return new Promise((resolve, reject) => {
+    task.on(
+      "state_changed",
+      (snapshot) => {
+        const progress =
+          snapshot.totalBytes === 0
+            ? 0
+            : Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        onProgress?.(progress);
+      },
+      reject,
+      () => {
+        getDownloadURL(task.snapshot.ref)
+          .then((url) => resolve({ url, path }))
+          .catch(reject);
+      }
+    );
+  });
 }
 
 export async function hapusFileStorage(path?: string | null): Promise<void> {

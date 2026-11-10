@@ -90,7 +90,42 @@ function AdminDetailInner() {
       order.status_pembayaran === "terverifikasi");
 
   function pesanError(err: unknown, konteks: string) {
+    const errorCode =
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      typeof err.code === "string"
+        ? err.code
+        : "";
+    if (
+      errorCode === "permission-denied" ||
+      (err instanceof Error &&
+        /missing or insufficient permissions/i.test(err.message))
+    ) {
+      setMsg(
+        `${konteks}: Firestore menolak perubahan. Pastikan akun memiliki role admin dan firestore.rules terbaru sudah dipublikasikan.`,
+      );
+      return;
+    }
     setMsg(`${konteks}: ${err instanceof Error ? err.message : "Terjadi kesalahan."}`);
+  }
+
+  async function periksaKesiapanOrder() {
+    if (busy) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const latestOrder = await reload();
+      if (latestOrder?.order_siap === false) {
+        setMsg(
+          "Detail pesanan belum selesai disimpan oleh customer. Minta customer menyelesaikan atau mengirim ulang pesanan sebelum mengonfirmasi.",
+        );
+      }
+    } catch (err) {
+      pesanError(err, "Gagal memuat ulang pesanan");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const reload = useCallback(async () => {
@@ -105,6 +140,7 @@ function AdminDetailInner() {
     setDetail(d);
     setProduksi(p);
     setTracking(t);
+    return o;
   }, [id]);
 
   useEffect(() => {
@@ -351,9 +387,19 @@ function AdminDetailInner() {
       {msg && <ErrorBox>{msg}</ErrorBox>}
 
       {order.order_siap === false && (
-        <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="status">
-          Pesanan sedang disiapkan customer. Tunggu hingga detailnya selesai dimuat.
-        </p>
+        <div className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between" role="status">
+          <p>
+            Pesanan sedang disiapkan customer. Konfirmasi akan aktif setelah detail produk dan pesanan selesai disimpan.
+          </p>
+          <button
+            type="button"
+            onClick={periksaKesiapanOrder}
+            disabled={busy}
+            className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg border border-amber-700/30 bg-white px-3 py-2 font-semibold text-amber-900 transition hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy ? "Memeriksa…" : "Periksa kembali"}
+          </button>
+        </div>
       )}
 
       {alurJudul && (
@@ -661,11 +707,17 @@ function AdminDetailInner() {
               {STATUS_ORDERS.map((s) => (
                 <button
                   key={s}
+                  type="button"
                   disabled={
                     busy ||
                     order.order_siap === false ||
                     order.status_order === s ||
                     (!paymentConfirmed && !["menunggu", "diproses", "dibatalkan"].includes(s))
+                  }
+                  aria-label={
+                    s === "diproses" && status === "menunggu"
+                      ? "Konfirmasi pesanan dan aktifkan pembayaran"
+                      : `Ubah status pesanan menjadi ${s}`
                   }
                   onClick={async () => {
                     setBusy(true);
@@ -679,10 +731,28 @@ function AdminDetailInner() {
                     } catch (err) { pesanError(err, "Gagal mengubah status"); }
                     finally { setBusy(false); }
                   }}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan disabled:cursor-not-allowed disabled:opacity-40 ${
-                    order.status_order === s ? "border-ink bg-ink text-gold" : "border-zinc-300 hover:border-cyan hover:text-cyan"
+                  className={`rounded-xl border-2 font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan disabled:cursor-not-allowed disabled:opacity-40 ${
+                    s === "diproses" && status === "menunggu"
+                      ? "flex min-h-16 w-full basis-full items-center justify-center gap-3 border-moon-yellow bg-moon-yellow px-5 py-4 text-base text-moon-ink shadow-sm hover:bg-moon-yellow/80 hover:shadow-md"
+                      : `rounded-full border px-3 py-2 text-sm ${
+                          order.status_order === s
+                            ? "border-ink bg-ink text-gold"
+                            : "border-zinc-300 hover:border-cyan hover:text-cyan"
+                        }`
                   }`}>
-                  {s}
+                  {s === "diproses" && status === "menunggu" ? (
+                    <>
+                      <Check className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      <span className="text-left">
+                        <span className="block">Konfirmasi pesanan</span>
+                        <span className="mt-0.5 block text-xs font-medium text-moon-ink/75">
+                          Setujui pesanan dan aktifkan pembayaran customer
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    s
+                  )}
                 </button>
               ))}
             </div>
