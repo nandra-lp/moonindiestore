@@ -17,6 +17,9 @@
   --animate-slide-down: slide-down 0.22s ease-out;
   --animate-slide-in-left: slide-in-left 0.22s ease-out;
   --animate-pop-in: pop-in 0.16s ease-out;
+  --animate-draw-line: draw-line 0.8s ease-out forwards;
+  --animate-fade-up: fade-up 0.35s ease-out forwards;
+  --animate-icon-swap: icon-swap 0.22s ease-out;
 
   @keyframes slide-down {
     from {
@@ -50,6 +53,38 @@
       transform: translateX(0);
     }
   }
+
+  @keyframes draw-line {
+    from {
+      width: 0%;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes icon-swap {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.85) rotate(45deg);
+    }
+    100% {
+      transform: scale(1) rotate(90deg);
+    }
+  }
 }
 
 /* Safe area inset utilities untuk iOS notch/Dynamic Island */
@@ -75,8 +110,19 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-slide-down,
   .animate-slide-in-left,
-  .animate-pop-in {
-    animation: none;
+  .animate-pop-in,
+  .animate-draw-line,
+  .animate-fade-up,
+  .animate-icon-swap,
+  .motion-safe\:animate-draw-line,
+  .motion-safe\:animate-fade-up,
+  .motion-safe\:animate-icon-swap {
+    animation: none !important;
+  }
+  .motion-safe\:transition-all,
+  .motion-safe\:duration-300,
+  .motion-safe\:duration-200 {
+    transition: none !important;
   }
 }
 
