@@ -101,7 +101,7 @@ export default function RegisterPage() {
             id="nama"
             label="Nama lengkap"
             type="text"
-            name="name"
+            name="nama"
             autoComplete="name"
             required
             value={form.nama}

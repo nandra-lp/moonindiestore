@@ -94,7 +94,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-16">
+    <main className="relative mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-8 sm:py-10">
       {/* Dekorasi brand yang lembut — konsisten dengan hero di halaman utama. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
         <span className="absolute -left-24 top-1/3 h-72 w-72 rounded-full bg-moon-yellow/20 blur-3xl" />

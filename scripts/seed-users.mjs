@@ -1,5 +1,5 @@
-// Script khusus untuk menambahkan katalog produk (Force Insert)
-// Cara pakai: npm run seed:users (atau sesuaikan dengan nama script di package.json Anda)
+// Script seed untuk menambahkan katalog produk awal ke Firestore.
+// Cara pakai: npm run seed:users
 
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";

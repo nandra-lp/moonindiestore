@@ -70,7 +70,7 @@ export default function UnauthorizedPage() {
         <p className="mt-6 text-sm text-zinc-500 flex items-center justify-center gap-1.5">
           Butuh akses?
           <a
-            href="/contact"
+            href="/dashboard"
             className="inline-flex items-center gap-1 font-medium text-moon-blue hover:text-moon-pink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moon-blue"
           >
             Hubungi admin

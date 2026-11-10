@@ -79,7 +79,7 @@ function PesanInner() {
 
   useEffect(() => {
     if (!idp || !firebaseUser) return;
-    const uid = firebaseUser.uid;
+    const uid = firebaseUser.uid; 
     getPelanggan(idp)
       .then((p) => {
         if (!p) {

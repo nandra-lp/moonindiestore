@@ -141,11 +141,14 @@ export function HowItWorks() {
           </p>
         </header>
 
-        <ol className="relative" role="list" aria-label="Langkah-langkah pemesanan">
+        <div className="relative">
           {/* Desktop: horizontal connector line */}
-          <div className="hidden lg:absolute lg:left-0 lg:right-0 lg:top-[56px] lg:h-px lg:bg-gradient-to-r lg:from-moon-yellow lg:via-moon-pink lg:to-moon-blue" aria-hidden="true" />
+          <div className="hidden lg:absolute lg:left-0 lg:right-0 lg:top-[56px] lg:block lg:h-px lg:bg-gradient-to-r lg:from-moon-yellow lg:via-moon-pink lg:to-moon-blue" aria-hidden="true" />
 
-          <div className="relative lg:flex lg:items-start lg:justify-between lg:gap-4">
+          <ol
+            className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-4"
+            aria-label="Langkah-langkah pemesanan"
+          >
             {STEPS.map((step, index) => {
               const colors = colorStyles[step.color];
               const isLast = index === STEPS.length - 1;
@@ -203,8 +206,8 @@ export function HowItWorks() {
                 </li>
               );
             })}
-          </div>
-        </ol>
+          </ol>
+        </div>
       </div>
 
       <style jsx>{`
