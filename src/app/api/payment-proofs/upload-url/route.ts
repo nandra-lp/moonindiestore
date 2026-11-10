@@ -15,6 +15,43 @@ import {
 
 const ORDER_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 
+export const runtime = "nodejs";
+
+function getStorageErrorDetails(error: unknown) {
+  if (typeof error !== "object" || error === null) {
+    return { status: undefined, statusCode: undefined };
+  }
+  const status =
+    "status" in error && typeof error.status === "number" ? error.status : undefined;
+  const statusCode =
+    "statusCode" in error && typeof error.statusCode === "string"
+      ? error.statusCode
+      : undefined;
+  return { status, statusCode };
+}
+
+function getStorageErrorResponse(status?: number) {
+  if (status === 401 || status === 403) {
+    return {
+      code: "supabase-credentials-invalid",
+      error:
+        "Supabase menolak kredensial server. Periksa SUPABASE_URL dan SUPABASE_SERVICE_ROLE_KEY di environment Netlify, lalu redeploy.",
+    };
+  }
+  if (status === 404) {
+    return {
+      code: "supabase-bucket-not-found",
+      error:
+        "Bucket payment-proofs tidak ditemukan pada proyek Supabase yang digunakan server. Pastikan SUPABASE_URL mengarah ke proyek yang benar dan migration bucket sudah diterapkan.",
+    };
+  }
+  return {
+    code: "supabase-storage-unavailable",
+    error:
+      "Supabase Storage gagal menyiapkan unggahan. Periksa status proyek Supabase dan log fungsi Netlify, lalu coba lagi.",
+  };
+}
+
 export async function POST(request: Request) {
   const { token, response: authResponse } = await authenticatePaymentProofRequest(request);
   if (authResponse) return authResponse;
@@ -79,8 +116,17 @@ export async function POST(request: Request) {
       .createSignedUploadUrl(path, { upsert: true });
 
     if (error) {
-      console.error("Could not create payment-proof upload URL:", error.message);
-      return paymentProofJson({ code: "storage-error", error: "Tidak dapat menyiapkan unggahan. Coba lagi." }, 502);
+      const details = getStorageErrorDetails(error);
+      console.error("Could not create payment-proof upload URL:", {
+        status: details.status,
+        statusCode: details.statusCode,
+      });
+      return paymentProofJson(
+        getStorageErrorResponse(details.status),
+        details.status === 401 || details.status === 403 || details.status === 404
+          ? details.status
+          : 502
+      );
     }
 
     return paymentProofJson({ path, signedUrl: data.signedUrl }, 200);

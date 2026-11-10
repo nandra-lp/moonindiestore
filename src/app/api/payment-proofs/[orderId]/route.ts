@@ -15,6 +15,8 @@ import {
 type RouteContext = { params: Promise<{ orderId: string }> };
 const ORDER_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 
+export const runtime = "nodejs";
+
 export async function GET(request: Request, { params }: RouteContext) {
   const { token, response: authResponse } = await authenticatePaymentProofRequest(request);
   if (authResponse) return authResponse;

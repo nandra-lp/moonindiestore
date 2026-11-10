@@ -74,6 +74,7 @@ Service account harus berasal dari Firebase project yang sama dengan aplikasi da
 | `401 unauthorized` | Token Firebase hilang, kedaluwarsa, atau tidak valid | Login ulang; pastikan aplikasi mengirim Firebase ID token |
 | `403 forbidden` | Bukan pemilik order, role tidak sesuai, atau verifikasi email belum selesai | Periksa role/profil Firestore, UID pemilik order, dan status verifikasi email |
 | `409 order-not-payable` | Status order/metode pembayaran belum memenuhi syarat | Pastikan order siap dan berstatus `diproses`, metode BCA/QRIS, serta belum terverifikasi |
+| API mengembalikan HTTP 500 kosong bahkan untuk request tanpa login | Netlify gagal memuat Route Handler sebelum validasi token berjalan | Pastikan deploy memakai konfigurasi `runtime = "nodejs"` dan `firebase-admin` dikecualikan dari bundling; periksa log fungsi Netlify |
 | `500 auth-service-unavailable` atau `server-error` | Environment Netlify tidak ada/salah atau service account salah project | Periksa nama variabel, Base64 service account, project ID, lalu redeploy |
 | `502 storage-error` | Bucket tidak ada, service-role key tidak valid, atau Supabase Storage menolak operasi | Pastikan proyek URL/key cocok, bucket `payment-proofs` aktif dan private, lalu periksa log fungsi Netlify |
 | Upload jaringan gagal/CORS | Browser gagal mengakses endpoint Supabase atau jaringan terputus | Periksa origin situs, Network tab, dan CORS untuk Supabase Storage; jangan mengubah Firebase Storage CORS untuk fitur ini |
