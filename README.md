@@ -114,6 +114,14 @@ Replace the values with your Firebase Web App configuration.
 
 > ⚠️ Never commit `.env.local`, Firebase Admin credentials, private keys, or service-account files.
 
+Configure cross-origin uploads for the production site and local development by applying `cors.json` to the Firebase Storage bucket:
+
+```bash
+gcloud storage buckets update gs://mis-db-1e50d.firebasestorage.app --cors-file=cors.json
+```
+
+Run this from the repository root with Google Cloud CLI authenticated to the Firebase project. `firebase deploy` does not apply the bucket CORS configuration.
+
 ### 4. Run the development server
 
 ```bash

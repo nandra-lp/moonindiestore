@@ -178,14 +178,15 @@ function DetailInner() {
         );
       } else if (code === "storage/upload-stalled") {
         setProofError(
-          "Unggahan dihentikan karena tidak ada progres selama 60 detik. Periksa koneksi internet, lalu kirim ulang bukti."
+          "Unggahan dihentikan karena tidak ada progres selama 60 detik. Periksa koneksi internet dan konfigurasi CORS Firebase Storage, lalu kirim ulang bukti."
         );
-      } else if (
-        code === "storage/retry-limit-exceeded" ||
-        code === "storage/network-request-failed"
-      ) {
+      } else if (code === "storage/retry-limit-exceeded") {
         setProofError(
-          "Koneksi terputus saat mengirim bukti. Periksa jaringan, lalu pilih kirim lagi."
+          "Firebase Storage tidak merespons unggahan. Periksa koneksi dan pastikan CORS bucket mengizinkan https://moonindiestore.netlify.app, lalu kirim ulang bukti."
+        );
+      } else if (code === "storage/network-request-failed") {
+        setProofError(
+          "Koneksi ke Firebase Storage gagal. Periksa jaringan dan konfigurasi CORS bucket, lalu kirim ulang bukti."
         );
       } else {
         setProofError(
