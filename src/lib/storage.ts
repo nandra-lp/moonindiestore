@@ -8,15 +8,11 @@ import {
   getDownloadURL,
   ref,
   uploadBytes,
-  uploadBytesResumable,
 } from "firebase/storage";
 import { storage } from "@/lib/firebase/config";
 
 export const MAX_GAMBAR_BYTES = 2 * 1024 * 1024; // 2 MB (sama dengan storage.rules)
 export const MAX_DESAIN_BYTES = 10 * 1024 * 1024; // 10 MB (sama dengan storage.rules)
-export const MAX_BUKTI_PEMBAYARAN_BYTES = 5 * 1024 * 1024;
-const BATAS_UPLOAD_TANPA_PROGRES_MS = 60_000;
-const TIPE_BUKTI_PEMBAYARAN_OK = ["image/jpeg", "image/png", "image/webp"];
 
 export function validasiGambar(file: File): string | null {
   if (!file.type.startsWith("image/")) return "File harus berupa gambar.";
@@ -33,14 +29,6 @@ export function validasiDesain(file: File): string | null {
   if (!tipeOk) return "Desain harus berupa gambar (JPG/PNG/WebP) atau PDF.";
   if (file.size > MAX_DESAIN_BYTES)
     return "Ukuran file desain maksimal 10 MB.";
-  return null;
-}
-
-export function validasiBuktiPembayaran(file: File): string | null {
-  if (!TIPE_BUKTI_PEMBAYARAN_OK.includes(file.type))
-    return "Bukti pembayaran harus berupa gambar JPG, PNG, atau WebP.";
-  if (file.size > MAX_BUKTI_PEMBAYARAN_BYTES)
-    return "Ukuran bukti pembayaran maksimal 5 MB.";
   return null;
 }
 
@@ -72,70 +60,6 @@ export async function uploadDesainCustom(
   await uploadBytes(r, file, { contentType: file.type });
   const url = await getDownloadURL(r);
   return { url, path };
-}
-
-export async function uploadBuktiPembayaran(
-  file: File,
-  orderId: string,
-  uid: string,
-  onProgress?: (progress: number) => void
-): Promise<{ url: string; path: string }> {
-  const err = validasiBuktiPembayaran(file);
-  if (err) throw new Error(err);
-  const path = `bukti-pembayaran/${orderId}/${uid}`;
-  const fileRef = ref(storage, path);
-  const task = uploadBytesResumable(fileRef, file, { contentType: file.type });
-
-  return new Promise((resolve, reject) => {
-    let unsubscribe = () => {};
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-    const resetTimeout = () => {
-      if (timeout !== null) clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        task.cancel();
-        unsubscribe();
-        reject(
-          Object.assign(
-            new Error("Tidak ada progres unggahan selama 60 detik."),
-            { code: "storage/upload-stalled" }
-          )
-        );
-      }, BATAS_UPLOAD_TANPA_PROGRES_MS);
-    };
-    const finish = () => {
-      if (timeout !== null) clearTimeout(timeout);
-      unsubscribe();
-    };
-
-    resetTimeout();
-    unsubscribe = task.on(
-      "state_changed",
-      (snapshot) => {
-        resetTimeout();
-        const progress =
-          snapshot.totalBytes === 0
-            ? 0
-            : Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        onProgress?.(progress);
-      },
-      (error) => {
-        finish();
-        reject(error);
-      },
-      () => {
-        resetTimeout();
-        getDownloadURL(task.snapshot.ref)
-          .then((url) => {
-            finish();
-            resolve({ url, path });
-          })
-          .catch((error: unknown) => {
-            finish();
-            reject(error);
-          });
-      }
-    );
-  });
 }
 
 export async function hapusFileStorage(path?: string | null): Promise<void> {

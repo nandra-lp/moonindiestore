@@ -74,8 +74,8 @@ export interface Order {
   status_order: StatusOrder;
   metode_pembayaran?: PaymentMethod;
   status_pembayaran?: PaymentStatus;
-  bukti_pembayaran_url?: string | null;
-  bukti_pembayaran_path?: string | null;
+  bukti_pembayaran_url?: string | null; // URL lama Firebase atau penanda bucket privat Supabase
+  bukti_pembayaran_path?: string | null; // object key bukti di bucket privat atau path Firebase lama
   waktu_pembayaran?: Timestamp | null;
   estimasi_selesai: Timestamp | null;
   // FK opsional -> PerkiraanHarga. Diisi bila order dibuat dari estimasi

@@ -10,6 +10,7 @@
     "seed:users": "node scripts/seed-users.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "firebase": "^12.19.0",
     "firebase-admin": "^14.4.0",
     "lucide-react": "^1.48.0",

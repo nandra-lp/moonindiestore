@@ -63,3 +63,7 @@ firebase-debug.log
 firestore-debug.log
 database-debug.log
 ui-debug.log
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/

@@ -114,13 +114,30 @@ Replace the values with your Firebase Web App configuration.
 
 > ⚠️ Never commit `.env.local`, Firebase Admin credentials, private keys, or service-account files.
 
-Configure cross-origin uploads for the production site and local development by applying `cors.json` to the Firebase Storage bucket:
+If Firebase Storage is enabled, configure cross-origin uploads for product images and custom designs by applying `cors.json` to the Firebase Storage bucket. Payment proofs use Supabase and do not depend on Firebase Storage CORS:
 
 ```bash
 gcloud storage buckets update gs://mis-db-1e50d.firebasestorage.app --cors-file=cors.json
 ```
 
 Run this from the repository root with Google Cloud CLI authenticated to the Firebase project. `firebase deploy` does not apply the bucket CORS configuration.
+
+### Payment proof storage (Supabase)
+
+Only customer payment proofs use Supabase Storage. Product images, custom designs, and all other Firebase Storage uploads remain unchanged.
+
+1. Create a Supabase project and set the following variables in `.env.local` and in the Netlify environment: `SUPABASE_URL` (project URL), `SUPABASE_SERVICE_ROLE_KEY` (server-only secret), and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable/anon key). Never expose the service role key with a `NEXT_PUBLIC_` prefix.
+2. Set `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64` to the Base64-encoded Firebase service-account JSON. For local development, the matching ignored `service-account.json` is loaded into `.env.local`. For Netlify, encode the service account locally (for example with `base64 -w 0 service-account.json`), then paste it directly into the Netlify environment variable UI—never into chat, `.env.example`, or a committed file. The service account needs permission to read the `users` and `orders` Firestore collections. Keep it server-only.
+3. Link the Supabase CLI to the project and create the private, size- and MIME-restricted bucket:
+
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <your-project-ref>
+   npx supabase db push
+   ```
+
+   This applies `supabase/migrations/20261110220000_create_private_payment_proofs_bucket.sql`. The bucket is private; the application server issues short-lived upload and download URLs after checking the Firebase user's role and order ownership.
+4. Redeploy the Next.js app after setting its environment variables. New proofs go to Supabase; existing Firebase proof links continue to work.
 
 ### 4. Run the development server
 

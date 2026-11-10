@@ -19,11 +19,13 @@ import {
 } from "@/lib/db";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import {
-  hapusFileStorage,
   MAX_BUKTI_PEMBAYARAN_BYTES,
+  deletePaymentProofForOrder,
   uploadBuktiPembayaran,
   validasiBuktiPembayaran,
-} from "@/lib/storage";
+} from "@/lib/payment-proof-client";
+import { hapusFileStorage } from "@/lib/storage";
+import { PaymentProofLink } from "@/components/payment/PaymentProofLink";
 import { formatRupiah, formatTanggal, hitungProgresProduksi, LABEL_TAHAP, TAHAP_PRODUKSI } from "@/lib/estimasi";
 import type {
   DetailOrder,
@@ -102,7 +104,12 @@ function DetailInner() {
           await hapusFileStorage(d.desain_path).catch(() => {});
           await deleteDocById(COLLECTIONS.detail_order, d.id);
         }),
-        hapusFileStorage(order.bukti_pembayaran_path),
+        deletePaymentProofForOrder(
+          order.id,
+          order.bukti_pembayaran_url,
+          order.bukti_pembayaran_path,
+          firebaseUser
+        ),
       ]);
       await deleteDocById(COLLECTIONS.orders, order.id);
       router.push("/customer/orders");
@@ -137,7 +144,7 @@ function DetailInner() {
         proof = await uploadBuktiPembayaran(
           proofFile,
           order.id,
-          firebaseUser.uid,
+          firebaseUser,
           setProofProgress
         );
         setUploadedProof({ file: proofFile, proof });
@@ -164,11 +171,7 @@ function DetailInner() {
         typeof err.code === "string"
           ? err.code
           : "";
-      if (code === "storage/unauthorized") {
-        setProofError(
-          "Firebase Storage menolak file. Pastikan pesanan berstatus diproses, akun customer terverifikasi, dan aturan Storage terbaru sudah dipublikasikan."
-        );
-      } else if (code === "permission-denied" && hasUploadedProof) {
+      if (code === "permission-denied" && hasUploadedProof) {
         setProofError(
           "File sudah terunggah, tetapi Firestore menolak penyimpanan status pembayaran. Periksa status pesanan dan aturan Firestore; setelah diperbaiki, kirim ulang untuk menyimpan status tanpa mengunggah file lagi."
         );
@@ -176,17 +179,13 @@ function DetailInner() {
         setProofError(
           "Firestore menolak perubahan. Pastikan pesanan berstatus diproses, akun customer terverifikasi, dan aturan Firestore terbaru sudah dipublikasikan."
         );
-      } else if (code === "storage/upload-stalled") {
+      } else if (
+        code === "network-request-failed" ||
+        code === "request-timeout" ||
+        code === "upload-timeout"
+      ) {
         setProofError(
-          "Unggahan dihentikan karena tidak ada progres selama 60 detik. Periksa koneksi internet dan konfigurasi CORS Firebase Storage, lalu kirim ulang bukti."
-        );
-      } else if (code === "storage/retry-limit-exceeded") {
-        setProofError(
-          "Firebase Storage tidak merespons unggahan. Periksa koneksi dan pastikan CORS bucket mengizinkan https://moonindiestore.netlify.app, lalu kirim ulang bukti."
-        );
-      } else if (code === "storage/network-request-failed") {
-        setProofError(
-          "Koneksi ke Firebase Storage gagal. Periksa jaringan dan konfigurasi CORS bucket, lalu kirim ulang bukti."
+          "Unggahan ke Supabase Storage gagal atau melewati batas waktu. Periksa koneksi, lalu kirim ulang bukti."
         );
       } else {
         setProofError(
@@ -442,7 +441,7 @@ function DetailInner() {
                 </p>
               </div>
 
-              {order.bukti_pembayaran_url && (
+              {order.bukti_pembayaran_url && order.bukti_pembayaran_url !== "supabase:private" && (
                 <p className="mt-3 text-sm">
                   <a
                     href={order.bukti_pembayaran_url}
@@ -456,6 +455,20 @@ function DetailInner() {
                     <span className="ml-2 text-zinc-500">Menunggu pemeriksaan admin.</span>
                   )}
                 </p>
+              )}
+              {order.bukti_pembayaran_url === "supabase:private" && (
+                <div className="mt-3 text-sm">
+                  <PaymentProofLink
+                    orderId={order.id}
+                    proofUrl={order.bukti_pembayaran_url}
+                    className="font-medium text-cyan underline underline-offset-2"
+                  >
+                    Lihat bukti pembayaran yang dikirim
+                  </PaymentProofLink>
+                  {order.status_pembayaran === "bukti_dikirim" && (
+                    <span className="ml-2 text-zinc-500">Menunggu pemeriksaan admin.</span>
+                  )}
+                </div>
               )}
 
               <form

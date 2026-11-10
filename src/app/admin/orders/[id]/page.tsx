@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 import { RequireRole } from "@/components/AuthGuard";
 import { DashboardShell } from "@/components/dashboard/Shell";
+import { PaymentProofLink } from "@/components/payment/PaymentProofLink";
+import { useAuth } from "@/context/AuthContext";
 import { AlertCircle, ClipboardList, Factory, Palette, Send, Check, Circle, CheckCircle, MinusCircle, Clock, Package, FileText, MessageCircle, Phone, CreditCard } from "lucide-react";
 import {
   addTracking,
@@ -22,6 +24,7 @@ import {
 } from "@/lib/db";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { hapusFileStorage } from "@/lib/storage";
+import { deletePaymentProofForOrder } from "@/lib/payment-proof-client";
 import { usePelangganMap, useProdukMap } from "@/hooks/useLookup";
 import { LABEL_TAHAP, TAHAP_PRODUKSI, formatRupiah, formatTanggal, hitungProgresProduksi } from "@/lib/estimasi";
 import type {
@@ -57,6 +60,7 @@ function AdminDetailInner() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const router = useRouter();
+  const { firebaseUser } = useAuth();
   const [order, setOrder] = useState<WithDocId<Order> | null>(null);
   const [customerContact, setCustomerContact] = useState<{
     orderId: string;
@@ -272,7 +276,12 @@ function AdminDetailInner() {
       await Promise.allSettled([
         ...tracking.map((t) => deleteDocById(COLLECTIONS.tracking_order, t.id)),
         ...produksi.map((p) => deleteDocById(COLLECTIONS.produksi, p.id)),
-        hapusFileStorage(order.bukti_pembayaran_path),
+        deletePaymentProofForOrder(
+          order.id,
+          order.bukti_pembayaran_url,
+          order.bukti_pembayaran_path,
+          firebaseUser
+        ),
         ...detail.map(async (d) => {
           await hapusFileStorage(d.desain_path).catch(() => {});
           await deleteDocById(COLLECTIONS.detail_order, d.id);
@@ -482,7 +491,15 @@ function AdminDetailInner() {
           <p className="mt-2 text-sm text-zinc-600">
             Status: <strong className="text-ink">{order.status_pembayaran ?? "menunggu"}</strong>
           </p>
-          {order.bukti_pembayaran_url ? (
+          {order.bukti_pembayaran_url === "supabase:private" ? (
+            <PaymentProofLink
+              orderId={order.id}
+              proofUrl={order.bukti_pembayaran_url}
+              className="mt-3 inline-flex font-medium text-cyan underline underline-offset-2"
+            >
+              Lihat bukti pembayaran
+            </PaymentProofLink>
+          ) : order.bukti_pembayaran_url ? (
             <a
               href={order.bukti_pembayaran_url}
               target="_blank"
