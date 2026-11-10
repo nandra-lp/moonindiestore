@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import qrisImage from "@/images/mis-qris.jpeg";
@@ -53,6 +53,7 @@ function DetailInner() {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofError, setProofError] = useState<string | null>(null);
+  const [proofSuccess, setProofSuccess] = useState<string | null>(null);
   const namaProduk = useProdukMap();
 
   useEffect(() => {
@@ -118,6 +119,7 @@ function DetailInner() {
 
     setUploadingProof(true);
     setProofError(null);
+    setProofSuccess(null);
     const form = event.currentTarget;
     try {
       const proof = await uploadBuktiPembayaran(proofFile, order.id, firebaseUser.uid);
@@ -130,6 +132,7 @@ function DetailInner() {
       });
       setProofFile(null);
       form.reset();
+      setProofSuccess("Bukti pembayaran berhasil dikirim dan sedang menunggu pemeriksaan admin.");
     } catch (err) {
       setProofError(
         err instanceof Error ? err.message : "Gagal mengirim bukti pembayaran."
@@ -137,6 +140,27 @@ function DetailInner() {
     } finally {
       setUploadingProof(false);
     }
+  }
+
+  function pilihBuktiPembayaran(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0] ?? null;
+    setProofSuccess(null);
+    setProofError(null);
+
+    if (!file) {
+      setProofFile(null);
+      return;
+    }
+
+    const validationError = validasiBuktiPembayaran(file);
+    if (validationError) {
+      setProofFile(null);
+      setProofError(validationError);
+      event.currentTarget.value = "";
+      return;
+    }
+
+    setProofFile(file);
   }
 
   if (denied) {
@@ -298,14 +322,17 @@ function DetailInner() {
           ) : (
             <>
               {order.metode_pembayaran === "qris" ? (
-                <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                  <Image
-                    src={qrisImage}
-                    alt="Kode QRIS Moon Indie Store untuk pembayaran"
-                    width={240}
-                    height={240}
-                    className="h-60 w-60 rounded-xl border border-zinc-200 object-contain"
-                  />
+                <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+                  <div className="w-full max-w-[336px] rounded-xl bg-white p-3 ring-1 ring-zinc-200">
+                    <Image
+                      src={qrisImage}
+                      alt="Kode QRIS Moon Indie Store untuk pembayaran"
+                      width={648}
+                      height={642}
+                      unoptimized
+                      className="block h-auto w-full object-contain"
+                    />
+                  </div>
                   <dl className="space-y-2">
                     <div>
                       <dt className="text-sm text-zinc-500">Total pembayaran</dt>
@@ -342,6 +369,16 @@ function DetailInner() {
                   ? "Bayar sesuai total yang sudah dikonfirmasi admin. Setelah itu, unggah bukti untuk diperiksa sebelum pesanan dilanjutkan."
                   : "Transfer sesuai total yang sudah dikonfirmasi admin. Setelah itu, unggah bukti untuk diperiksa sebelum pesanan dilanjutkan."}
               </p>
+              <div className="mt-3 rounded-lg border border-moon-blue/20 bg-moon-blue/5 p-3">
+                <p className="text-sm font-semibold text-ink">Cantumkan rincian pesanan pada catatan pembayaran</p>
+                <p className="mt-1 text-sm leading-6 text-zinc-600">
+                  Jika tersedia kolom catatan atau berita pembayaran, tuliskan{" "}
+                  <strong>
+                    Order {order.id.slice(0, 8).toUpperCase()} - {profile?.nama ?? "Nama Anda"}
+                  </strong>
+                  {" "}agar pembayaran mudah dicocokkan dengan pesanan. Jika tidak ada kolom catatan, pastikan bukti pembayaran yang diunggah menampilkan detail transaksi.
+                </p>
+              </div>
 
               {order.bukti_pembayaran_url && (
                 <p className="mt-3 text-sm">
@@ -359,35 +396,63 @@ function DetailInner() {
                 </p>
               )}
 
-              <form onSubmit={kirimBuktiPembayaran} className="mt-5 space-y-3">
+              <form
+                onSubmit={kirimBuktiPembayaran}
+                className="mt-5 space-y-4 rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5"
+              >
+                <div>
+                  <h3 className="font-semibold text-ink">
+                    {order.status_pembayaran === "bukti_dikirim" ? "Ganti bukti pembayaran" : "Unggah bukti pembayaran"}
+                  </h3>
+                  <p className="mt-1 text-sm leading-6 text-zinc-600">
+                    Pilih tangkapan layar atau foto bukti transaksi yang menampilkan status berhasil, jumlah pembayaran, dan waktu transaksi.
+                  </p>
+                </div>
                 <label className="block text-sm font-medium text-ink" htmlFor="payment-proof">
-                  {order.status_pembayaran === "bukti_dikirim" ? "Ganti bukti pembayaran" : "Unggah bukti pembayaran"}
+                  File bukti pembayaran
                 </label>
                 <input
                   id="payment-proof"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  onChange={(event) => {
-                    setProofFile(event.target.files?.[0] ?? null);
-                    setProofError(null);
-                  }}
-                  className="block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-cream file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-gold/20"
+                  onChange={pilihBuktiPembayaran}
+                  className="block w-full rounded-lg border border-zinc-300 bg-white text-sm text-zinc-700 file:mr-4 file:border-0 file:bg-cream file:px-4 file:py-3 file:font-semibold file:text-ink hover:file:bg-gold/20 focus-visible:outline-2 focus-visible:outline-moon-blue focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={uploadingProof}
                   required
                 />
-                <p className="text-xs text-zinc-500">
-                  JPG, PNG, atau WebP, maksimal {(MAX_BUKTI_PEMBAYARAN_BYTES / 1024 / 1024).toFixed(0)} MB.
+                <p className="text-xs leading-5 text-zinc-500">
+                  Format JPG, PNG, atau WebP. Ukuran maksimal{" "}
+                  {(MAX_BUKTI_PEMBAYARAN_BYTES / 1024 / 1024).toFixed(0)} MB.
                 </p>
+                {proofFile && (
+                  <p className="break-all rounded-lg bg-white px-3 py-2 text-sm text-zinc-700 ring-1 ring-zinc-200">
+                    File dipilih: <span className="font-medium">{proofFile.name}</span>
+                    <span className="ml-1 text-zinc-500">
+                      ({(proofFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </p>
+                )}
                 {proofError && (
-                  <p className="text-sm text-magenta" role="alert">{proofError}</p>
+                  <p className="rounded-lg border border-magenta/20 bg-magenta/5 p-3 text-sm text-magenta" role="alert">
+                    {proofError}
+                  </p>
+                )}
+                {proofSuccess && (
+                  <p className="rounded-lg border border-green-600/20 bg-green-50 p-3 text-sm text-green-700" role="status">
+                    {proofSuccess}
+                  </p>
                 )}
                 <button
                   type="submit"
                   disabled={uploadingProof || !proofFile}
-                  className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ink/90 focus-visible:outline-2 focus-visible:outline-moon-blue focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
                   <Upload className="h-4 w-4" aria-hidden="true" />
-                  {uploadingProof ? "Mengunggah…" : "Kirim bukti"}
+                  {uploadingProof
+                    ? "Mengunggah bukti…"
+                    : order.status_pembayaran === "bukti_dikirim"
+                      ? "Kirim bukti pengganti"
+                      : "Kirim bukti pembayaran"}
                 </button>
               </form>
             </>

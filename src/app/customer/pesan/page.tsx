@@ -507,23 +507,45 @@ function PesanInner() {
                     onChange={() => setPaymentMethod("qris")}
                     className="mt-1 accent-moon-ink"
                   />
-                  <span className="flex min-w-0 items-center gap-3">
-                    <Image
-                      src={qrisImage}
-                      alt="QRIS Moon Indie Store"
-                      width={64}
-                      height={64}
-                      className="h-16 w-16 shrink-0 rounded-lg border border-zinc-200 bg-white object-contain"
-                    />
-                    <span>
-                      <span className="block font-semibold text-moon-ink">QRIS</span>
-                      <span className="mt-1 block text-sm text-zinc-600">
-                        Bayar dengan memindai kode QR.
-                      </span>
+                  <span className="min-w-0">
+                    <span className="block font-semibold text-moon-ink">QRIS</span>
+                    <span className="mt-1 block text-sm text-zinc-600">
+                      Bayar melalui mobile banking atau e-wallet.
                     </span>
                   </span>
                 </label>
               </div>
+              {paymentMethod === "qris" && (
+                <div className="grid gap-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:grid-cols-[minmax(0,336px)_minmax(0,1fr)] sm:items-center sm:p-5">
+                  <div className="mx-auto w-full max-w-[336px] rounded-xl bg-white p-3 ring-1 ring-zinc-200 sm:mx-0">
+                    <Image
+                      src={qrisImage}
+                      alt="Kode QRIS Moon Indie Store untuk pembayaran"
+                      width={648}
+                      height={642}
+                      unoptimized
+                      className="block h-auto w-full object-contain"
+                    />
+                  </div>
+                  <div className="text-center sm:text-left">
+                    <h4 className="font-semibold text-moon-ink">Kode QRIS siap dipindai</h4>
+                    <p className="mt-1 text-sm leading-6 text-zinc-600">
+                      Gunakan fitur scan di mobile banking atau e-wallet. Pindai dari perangkat lain, atau buka kode ukuran penuh jika aplikasi mendukung scan dari galeri.
+                    </p>
+                    <a
+                      href={qrisImage.src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex rounded-lg font-medium text-moon-blue underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-moon-blue focus-visible:outline-offset-4"
+                    >
+                      Buka kode QRIS ukuran penuh
+                    </a>
+                    <p className="mt-3 text-xs leading-5 text-zinc-500">
+                      Lakukan pembayaran setelah admin mengonfirmasi total pesanan.
+                    </p>
+                  </div>
+                </div>
+              )}
               <p className="text-xs leading-5 text-zinc-500">
                 GoPay belum tersedia. Jangan melakukan pembayaran sebelum total akhir dikonfirmasi admin.
               </p>
