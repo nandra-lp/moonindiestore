@@ -126,9 +126,10 @@ Run this from the repository root with Google Cloud CLI authenticated to the Fir
 
 Only customer payment proofs use Supabase Storage. Product images, custom designs, and all other Firebase Storage uploads remain unchanged.
 
-1. Create a Supabase project and set the following variables in `.env.local` and in the Netlify environment: `SUPABASE_URL` (project URL), `SUPABASE_SERVICE_ROLE_KEY` (server-only secret), and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable/anon key). Never expose the service role key with a `NEXT_PUBLIC_` prefix.
-2. Set `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64` to the Base64-encoded Firebase service-account JSON. For local development, the matching ignored `service-account.json` is loaded into `.env.local`. For Netlify, encode the service account locally (for example with `base64 -w 0 service-account.json`), then paste it directly into the Netlify environment variable UI—never into chat, `.env.example`, or a committed file. The service account needs permission to read the `users` and `orders` Firestore collections. Keep it server-only.
-3. Link the Supabase CLI to the project and create the private, size- and MIME-restricted bucket:
+1. Create a Supabase project. Configure `SUPABASE_URL` as a Firebase Functions parameter and `SUPABASE_SERVICE_ROLE_KEY` as a Firebase Secret. `NEXT_PUBLIC_SUPABASE_ANON_KEY` remains a public client variable; never expose the service-role key with a `NEXT_PUBLIC_` prefix.
+2. Deploy the `paymentProofApi` Firebase Cloud Function (`firebase deploy --only functions:paymentProofApi`). Set the `SUPABASE_SERVICE_ROLE_KEY` secret first with `firebase functions:secrets:set SUPABASE_SERVICE_ROLE_KEY`, and provide `SUPABASE_URL` when prompted. The function uses the Firebase runtime service account to verify tokens and access Firestore; grant it the required Firestore permissions. Do not copy Firebase Admin credentials or the Supabase service-role key into Cloudflare.
+3. Set `PAYMENT_PROOF_API_BASE_URL` in the Next.js hosting environment to the deployed function URL. This server-side proxy forwards the Firebase ID token; the Cloud Function verifies the token and checks the user's role and order ownership.
+4. Link the Supabase CLI to the project and create the private, size- and MIME-restricted bucket:
 
    ```bash
    npx supabase login
@@ -137,7 +138,7 @@ Only customer payment proofs use Supabase Storage. Product images, custom design
    ```
 
    This applies `supabase/migrations/20261110220000_create_private_payment_proofs_bucket.sql`. The bucket is private; the application server issues short-lived upload and download URLs after checking the Firebase user's role and order ownership.
-4. Redeploy the Next.js app after setting its environment variables. New proofs go to Supabase; existing Firebase proof links continue to work.
+5. Redeploy the Next.js app after setting `PAYMENT_PROOF_API_BASE_URL`. New proofs go to Supabase; existing Firebase proof links continue to work.
 
 ### 4. Run the development server
 

@@ -30,32 +30,30 @@ Jika upload berhasil tetapi penyimpanan Firestore gagal, file tetap berada di Su
 
 ## Konfigurasi environment
 
-Set variabel berikut di `.env.local` untuk pengembangan dan di environment Netlify untuk deployment:
+Set variabel berikut untuk aplikasi dan Firebase Cloud Functions:
 
 | Variabel | Penggunaan | Rahasia? |
 |---|---|---|
-| `SUPABASE_URL` | URL proyek Supabase; dipakai server | Bukan rahasia |
-| `SUPABASE_SERVICE_ROLE_KEY` | Akses server ke Supabase Storage | **Ya — server saja** |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Header API untuk unggah menggunakan signed URL di browser | Tidak; publishable/anon key |
-| `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64` | Service account Firebase yang di-encode Base64, untuk verifikasi token dan membaca order/profil dari server | **Ya — server saja** |
+| `PAYMENT_PROOF_API_BASE_URL` | URL Firebase Cloud Function `paymentProofApi`, dipakai proxy server Next.js | Bukan rahasia |
+| `SUPABASE_URL` | Parameter Firebase Functions untuk URL proyek Supabase | Bukan rahasia |
+| `SUPABASE_SERVICE_ROLE_KEY` | Firebase Secret untuk akses Supabase Storage | **Ya — Firebase Secret saja** |
 
-Di Netlify, tambahkan variabel pada pengaturan site yang benar dan redeploy agar build/runtime baru menggunakannya. Untuk membuat nilai Firebase:
+Atur `PAYMENT_PROOF_API_BASE_URL` di environment hosting Next.js dan redeploy. Jangan simpan secret Supabase di environment browser atau Cloudflare. Sebelum deploy function:
 
 ```bash
-base64 -w 0 service-account.json
+firebase functions:secrets:set SUPABASE_SERVICE_ROLE_KEY
+firebase deploy --only functions:paymentProofApi
 ```
 
-Masukkan hasilnya langsung ke variabel Netlify. Jangan kirim key atau hasil Base64 melalui chat, jangan beri prefix `NEXT_PUBLIC_` pada rahasia, dan jangan simpan nilainya di `.env.example` atau file yang dilacak Git. `.env.local` harus tetap diabaikan Git.
-
-Service account harus berasal dari Firebase project yang sama dengan aplikasi dan memiliki akses baca ke koleksi `users` dan `orders`, serta dapat memverifikasi Firebase ID token. Jika service-role key pernah masuk ke file yang di-commit atau dibagikan, rotasi key itu di Supabase sebelum deployment.
+Firebase CLI meminta nilai `SUPABASE_URL` jika belum dikonfigurasi. Function memakai runtime service account untuk mengakses Firebase Auth dan Firestore; berikan izin Firestore yang diperlukan ke service account tersebut. Jangan kirim atau commit nilai secret. Jika service-role key pernah masuk ke file yang di-commit atau dibagikan, rotasi key itu di Supabase sebelum deployment.
 
 ## Deployment
 
 1. Pastikan bucket `payment-proofs` ada, berstatus private, maksimal 5 MB, dan mengizinkan `image/jpeg`, `image/png`, serta `image/webp`. Migration di atas mengatur nilai tersebut.
-2. Tambahkan environment variables di Netlify; rahasia tidak perlu ditambahkan ke repo.
-3. Pastikan perubahan kode dan migration yang telah diterapkan sudah di-commit/push ke branch Netlify.
-4. Jalankan deploy baru. Gunakan clear cache hanya jika build/cache lama menyebabkan masalah; perubahan environment tetap memerlukan deploy baru.
-5. Uji unggah dengan customer terautentikasi pada order yang eligible. Storage Firebase tidak perlu diaktifkan untuk fitur bukti ini; Firebase Auth dan Firestore tetap diperlukan.
+2. Deploy Cloud Function ke project Firebase yang sama dengan Firebase Auth dan Firestore. Function memakai region `asia-southeast1`.
+3. Salin URL hasil deploy ke `PAYMENT_PROOF_API_BASE_URL` pada environment hosting Next.js, lalu redeploy Worker/aplikasi.
+4. Uji unggah dengan customer terautentikasi pada order yang eligible. Storage Firebase tidak perlu diaktifkan untuk fitur bukti ini; Firebase Auth dan Firestore tetap diperlukan.
 
 ## Pengujian setelah deploy
 
@@ -74,9 +72,10 @@ Service account harus berasal dari Firebase project yang sama dengan aplikasi da
 | `401 unauthorized` | Token Firebase hilang, kedaluwarsa, atau tidak valid | Login ulang; pastikan aplikasi mengirim Firebase ID token |
 | `403 forbidden` | Bukan pemilik order, role tidak sesuai, atau verifikasi email belum selesai | Periksa role/profil Firestore, UID pemilik order, dan status verifikasi email |
 | `409 order-not-payable` | Status order/metode pembayaran belum memenuhi syarat | Pastikan order siap dan berstatus `diproses`, metode BCA/QRIS, serta belum terverifikasi |
-| API mengembalikan HTTP 500 kosong bahkan untuk request tanpa login | Netlify gagal memuat Route Handler sebelum validasi token berjalan | Pastikan deploy memakai konfigurasi `runtime = "nodejs"` dan `firebase-admin` dikecualikan dari bundling; periksa log fungsi Netlify |
-| `500 auth-service-unavailable` atau `server-error` | Environment Netlify tidak ada/salah atau service account salah project | Periksa nama variabel, Base64 service account, project ID, lalu redeploy |
-| `502 storage-error` | Bucket tidak ada, service-role key tidak valid, atau Supabase Storage menolak operasi | Pastikan proyek URL/key cocok, bucket `payment-proofs` aktif dan private, lalu periksa log fungsi Netlify |
+| `503 payment-api-unavailable` | `PAYMENT_PROOF_API_BASE_URL` kosong atau tidak valid | Pastikan URL Function benar dan redeploy aplikasi |
+| `502 payment-api-unavailable` | Function tidak dapat dijangkau | Periksa status deploy, URL Function, dan log Firebase Functions |
+| `503 auth-service-unavailable` | Verifikasi Firebase token gagal karena layanan/konfigurasi | Periksa Firebase Auth, project target, dan log Cloud Functions |
+| `502 storage-unavailable` atau `storage-credentials-invalid` | Bucket tidak ada, secret Supabase salah, atau Supabase Storage menolak operasi | Pastikan parameter/secret cocok, bucket `payment-proofs` aktif dan private, lalu periksa log Cloud Functions |
 | Upload jaringan gagal/CORS | Browser gagal mengakses endpoint Supabase atau jaringan terputus | Periksa origin situs, Network tab, dan CORS untuk Supabase Storage; jangan mengubah Firebase Storage CORS untuk fitur ini |
 | Link bukti tidak dapat dibuka | Marker/path Firestore tidak cocok dengan object di bucket atau signed URL kedaluwarsa | Minta link baru dengan membuka ulang bukti; periksa object `bukti-pembayaran/{orderId}/{uid}` dan field order |
 

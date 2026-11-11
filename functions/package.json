@@ -1,0 +1,20 @@
+{
+  "name": "moonindiestore-payment-proof-functions",
+  "private": true,
+  "main": "lib/index.js",
+  "type": "module",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "firebase-admin": "^14.4.0",
+    "firebase-functions": "^7.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
