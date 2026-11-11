@@ -491,7 +491,7 @@ function AdminDetailInner() {
           <p className="mt-2 text-sm text-zinc-600">
             Status: <strong className="text-ink">{order.status_pembayaran ?? "menunggu"}</strong>
           </p>
-    {order.bukti_pembayaran_url ? (
+          {order.bukti_pembayaran_url ? (
       <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-ink">Bukti Pembayaran</h3>

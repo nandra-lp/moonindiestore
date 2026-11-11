@@ -31,8 +31,8 @@ export async function GET(request: Request, { params }: RouteContext) {
       getPaymentProofOrder(orderId),
       getPaymentProofUser(token.uid),
     ]);
-    if (!order || !user || order.bukti_pembayaran_url !== PAYMENT_PROOF_URL_MARKER) {
-      return paymentProofJson({ code: "proof-not-found", error: "Bukti pembayaran tidak ditemukan." }, 404);
+    if (!order || !user) {
+      return paymentProofJson({ code: "proof-not-found", error: "Pesanan atau pengguna tidak ditemukan." }, 404);
     }
 
     const isCustomerOwner =
@@ -44,7 +44,14 @@ export async function GET(request: Request, { params }: RouteContext) {
       return paymentProofJson({ code: "forbidden", error: "Anda tidak dapat melihat bukti pembayaran ini." }, 403);
     }
 
-    const path = getPaymentProofPath(orderId, token.uid);
+    // Bukti publik (Firebase Storage lama) — kembalikan URL publik langsung.
+    if (order.bukti_pembayaran_url && order.bukti_pembayaran_url !== PAYMENT_PROOF_URL_MARKER) {
+      return paymentProofJson({ url: order.bukti_pembayaran_url }, 200);
+    }
+
+    // Bukti privat (Supabase) — terbitkan signed URL untuk object milik pelanggan pemilik order.
+    const proofUid = String(order.uid_pelanggan ?? token.uid);
+    const path = getPaymentProofPath(orderId, proofUid);
     const { data, error } = await getSupabaseAdmin()
       .storage.from(PAYMENT_PROOFS_BUCKET)
       .createSignedUrl(path, 60);
@@ -91,7 +98,9 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       return paymentProofJson({ code: "forbidden", error: "Anda tidak dapat menghapus bukti pembayaran ini." }, 403);
     }
 
-    const path = getPaymentProofPath(orderId, token.uid);
+    // Hapus object milik pelanggan pemilik order (bukan uid admin/owner).
+    const proofUid = String(order.uid_pelanggan ?? token.uid);
+    const path = getPaymentProofPath(orderId, proofUid);
     const { error } = await getSupabaseAdmin()
       .storage.from(PAYMENT_PROOFS_BUCKET)
       .remove([path]);
