@@ -13,6 +13,13 @@ const ROLE_HOME: Record<string, string> = {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname === "/ws" || pathname.startsWith("/ws/")) {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+
   const authed = request.cookies.get("mis_auth")?.value === "1";
   const role = request.cookies.get("mis_role")?.value;
 
@@ -47,5 +54,11 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/owner/:path*", "/customer/:path*", "/dashboard/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/owner/:path*",
+    "/customer/:path*",
+    "/dashboard/:path*",
+    "/ws/:path*",
+  ],
 };

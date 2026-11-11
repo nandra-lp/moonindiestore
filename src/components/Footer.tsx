@@ -15,10 +15,10 @@ import {
 } from "react-icons/fa6";
 
 const CONTACT_INFO = {
-  address: "Jl. Raya Kembangan No. 123, Jakarta Barat 11520",
+  address: "Jl. H. Saikin No.27, RT.15/RW.8, Pd. Pinang, Kec. Kebayoran Lama, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12310",
   email: "hello@moonindiestore.com",
-  phone: "+62 21 1234 5678",
-  whatsapp: "+62 812 3456 7890",
+  phone: "+62 878-8861-6200",
+  whatsapp: "+62 878-8861-6200",
 };
 
 const SOCIAL_LINKS = [

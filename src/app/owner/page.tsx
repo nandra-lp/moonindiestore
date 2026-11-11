@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calculator } from "lucide-react";
+import { Calculator, ArrowRight } from "lucide-react";
 import { RequireRole } from "@/components/AuthGuard";
 import { DashboardShell } from "@/components/dashboard/Shell";
 import {
@@ -12,11 +12,12 @@ import {
   SectionHead,
   StatLink,
 } from "@/components/dashboard/widgets";
+import { RevenueChart } from "@/components/dashboard/RevenueChart";
+import { PrimaryLink, Stat } from "@/components/ui";
 import { listDetailByOrderIds, subscribeOrdersRecent, type WithDocId } from "@/lib/db";
 import { ringkasNamaProduk, usePelangganMap, useProdukMap } from "@/hooks/useLookup";
 import { formatRupiah, formatTanggal } from "@/lib/estimasi";
 import type { Order } from "@/types/firestore";
-import { Stat } from "@/components/ui";
 
 const FILTERS = [
   "semua",
@@ -31,13 +32,11 @@ function OwnerInner() {
   const [orders, setOrders] = useState<WithDocId<Order>[]>([]);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("semua");
   const [loaded, setLoaded] = useState(false);
-  // orderId -> daftar id_produk, untuk ringkasan nama produk per kartu.
   const [ringkasan, setRingkasan] = useState<Record<string, string[]>>({});
   const namaPelanggan = usePelangganMap();
   const namaProduk = useProdukMap();
+
   useEffect(() => {
-    // Listener realtime: kartu order ikut berubah saat ada order
-    // baru / perubahan status, tanpa refresh halaman.
     const unsub = subscribeOrdersRecent(
       50,
       (rows) => {
@@ -72,30 +71,39 @@ function OwnerInner() {
     .reduce((s, o) => s + (o.total_harga || 0), 0);
 
   return (
-    <DashboardShell role="owner" title="Dashboard" contain="5xl">
+    <DashboardShell role="owner" title="Dashboard" contain="6xl">
       <DashboardHero
         eyebrow="Dashboard owner"
         title="Pantau omzet & produksi"
         desc="Read-only. Untuk update produksi, hubungi admin."
       />
-      <div className="mt-6 grid gap-3 sm:grid-cols-3 sm:gap-4">
+
+      {/* Ringkasan statistik */}
+      <div className="mt-6 grid gap-4 sm:grid-cols-3 sm:gap-5">
         <Stat
-          label="Estimasi omzet (non-batal)"
+          label="Omzet (non-batal)"
           value={formatRupiah(omzet)}
           accent="blue"
         />
         <Stat label="Order terpantau" value={orders.length} accent="yellow" />
         <StatLink
           href="/owner/estimasi"
-          label="Estimasi harga"
+          label="Estimasi pendapatan"
           value="Lihat"
           accent="pink"
           icon={Calculator}
         />
       </div>
 
-      <div className="mt-8">
-        <SectionHead title="Order terbaru — klik untuk melihat detail" live />
+      {/* Grafik pemasukan */}
+      <RevenueChart orders={orders} loading={!loaded} />
+
+      {/* Daftar order terbaru */}
+      <div className="mt-8 flex items-center justify-between">
+        <SectionHead title="Order terbaru — klik untuk melihat detail" />
+        <PrimaryLink href="/owner">
+          Semua order <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
+        </PrimaryLink>
       </div>
       <div className="mt-3">
         <FilterPills
@@ -107,21 +115,20 @@ function OwnerInner() {
       </div>
 
       {!loaded ? (
-        <div className="mt-4 grid gap-4 sm:gap-5 sm:grid-cols-2" aria-hidden="true">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="animate-pulse rounded-2xl border border-zinc-200 bg-white p-5"
-            >
-              <div className="h-4 w-2/3 rounded-full bg-zinc-200" />
-              <div className="mt-2 h-3 w-1/2 rounded-full bg-zinc-100" />
-              <div className="mt-4 h-10 rounded-xl bg-zinc-100" />
+        <div className="mt-6 grid gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4" aria-hidden="true">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-zinc-200 bg-white p-5">
+              <div className="h-4 w-3/4 rounded-full bg-moon-yellow/20 animate-pulse" />
+              <div className="mt-3 h-3 w-1/2 rounded-full bg-zinc-100 animate-pulse" />
+              <div className="mt-4 h-3 w-full rounded-full bg-zinc-100 animate-pulse" />
+              <div className="mt-2 h-10 w-full rounded-xl bg-zinc-100 animate-pulse" />
+              <div className="mt-3 h-3 w-1/3 rounded-full bg-zinc-100 animate-pulse" />
             </div>
           ))}
           <span className="sr-only">Memuat order…</span>
         </div>
       ) : (
-        <div className="mt-4 grid gap-4 sm:gap-5 sm:grid-cols-2">
+        <div className="mt-6 grid gap-4 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((o) => (
             <OrderCard
               key={o.id}
@@ -137,13 +144,15 @@ function OwnerInner() {
             />
           ))}
           {filtered.length === 0 && (
-            <EmptyCard>
-              {orders.length === 0 ? (
-                <>Belum ada order.</>
-              ) : (
-                <>Tidak ada order berstatus “{filter}”.</>
-              )}
-            </EmptyCard>
+            <div className="col-span-full">
+              <EmptyCard>
+                {orders.length === 0 ? (
+                  <>Belum ada order.</>
+                ) : (
+                  <>Tidak ada order berstatus “{filter}”.</>
+                )}
+              </EmptyCard>
+            </div>
           )}
         </div>
       )}

@@ -8,6 +8,7 @@ import {
   Package,
   PlusCircle,
   ShoppingCart,
+  TrendingUp,
   Users,
   User,
   type LucideIcon,
@@ -29,7 +30,7 @@ export const DASHBOARD_NAV: Record<Role, DashboardNavItem[]> = {
   ],
   owner: [
     { href: "/owner", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/owner/estimasi", label: "Estimasi", icon: Calculator },
+    { href: "/owner/estimasi", label: "Estimasi pendapatan", icon: TrendingUp },
   ],
   customer: [
     { href: "/customer", label: "Dashboard", icon: LayoutDashboard },

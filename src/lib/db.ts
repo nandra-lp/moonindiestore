@@ -205,6 +205,26 @@ export async function listOrdersRecent(max = 50) {
   ]);
 }
 
+export async function listOrdersByEstimasiIds(estimasiIds: string[]) {
+  const uniqueIds = [...new Set(estimasiIds)];
+  const chunks: string[][] = [];
+  for (let i = 0; i < uniqueIds.length; i += 30) {
+    chunks.push(uniqueIds.slice(i, i + 30));
+  }
+
+  const groups = await Promise.all(
+    chunks.map((ids) =>
+      listBy<Order>(COLLECTIONS.orders, [where("id_estimasi", "in", ids)])
+    )
+  );
+  return groups
+    .flat()
+    .sort(
+      (a, b) =>
+        (b.tgl_order?.toMillis?.() || 0) - (a.tgl_order?.toMillis?.() || 0)
+    );
+}
+
 export function subscribeOrdersRecent(
   max: number,
   onData: (orders: WithDocId<Order>[]) => void,
