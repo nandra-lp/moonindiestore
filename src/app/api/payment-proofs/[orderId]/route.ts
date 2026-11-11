@@ -44,7 +44,7 @@ export async function GET(request: Request, { params }: RouteContext) {
       return paymentProofJson({ code: "forbidden", error: "Anda tidak dapat melihat bukti pembayaran ini." }, 403);
     }
 
-    const path = getPaymentProofPath(orderId, String(order.uid_pelanggan));
+    const path = getPaymentProofPath(orderId, token.uid);
     const { data, error } = await getSupabaseAdmin()
       .storage.from(PAYMENT_PROOFS_BUCKET)
       .createSignedUrl(path, 60);
@@ -91,7 +91,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       return paymentProofJson({ code: "forbidden", error: "Anda tidak dapat menghapus bukti pembayaran ini." }, 403);
     }
 
-    const path = getPaymentProofPath(orderId, String(order.uid_pelanggan));
+    const path = getPaymentProofPath(orderId, token.uid);
     const { error } = await getSupabaseAdmin()
       .storage.from(PAYMENT_PROOFS_BUCKET)
       .remove([path]);

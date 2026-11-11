@@ -59,16 +59,20 @@ async function getApiError(response: Response, fallback: string) {
   return Object.assign(new Error(fallback), { code: "request-failed" });
 }
 
+export type UploadStatus = "preparing" | "uploading";
+
 export async function uploadBuktiPembayaran(
   file: File,
   orderId: string,
   user: FirebaseUser,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  onStatus?: (status: UploadStatus) => void
 ): Promise<{ url: string; path: string }> {
   const validationError = validasiBuktiPembayaran(file);
   if (validationError) throw new Error(validationError);
 
   const token = await getIdToken(user);
+  onStatus?.("preparing");
   const response = await fetchPaymentProofApi("/api/payment-proofs/upload-url", {
     method: "POST",
     headers: {
@@ -86,18 +90,19 @@ export async function uploadBuktiPembayaran(
 
   const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!apiKey) {
-    throw Object.assign(new Error("Supabase belum dikonfigurasi pada aplikasi."), {
+    throw Object.assign(new Error("Supabase belum dikonfigurasi pada aplikasi. Atur NEXT_PUBLIC_SUPABASE_ANON_KEY."), {
       code: "supabase-not-configured",
     });
   }
 
+  onStatus?.("uploading");
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", result.signedUrl);
     xhr.setRequestHeader("apikey", apiKey);
     xhr.setRequestHeader("x-upsert", "true");
     xhr.setRequestHeader("Content-Type", file.type);
-    xhr.timeout = 120_000;
+    xhr.timeout = 300_000;
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
         onProgress?.(Math.round((event.loaded / event.total) * 100));
@@ -116,14 +121,14 @@ export async function uploadBuktiPembayaran(
     };
     xhr.onerror = () => {
       reject(
-        Object.assign(new Error("Koneksi ke Supabase Storage gagal."), {
+        Object.assign(new Error("Koneksi ke Supabase Storage gagal. Periksa koneksi internet dan CORS bucket payment-proofs."), {
           code: "network-request-failed",
         })
       );
     };
     xhr.ontimeout = () => {
       reject(
-        Object.assign(new Error("Unggahan melewati batas waktu 2 menit."), {
+        Object.assign(new Error("Unggahan melewati batas waktu 5 menit."), {
           code: "upload-timeout",
         })
       );

@@ -5,9 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 import { RequireRole } from "@/components/AuthGuard";
 import { DashboardShell } from "@/components/dashboard/Shell";
-import { PaymentProofLink } from "@/components/payment/PaymentProofLink";
+import { PaymentProofViewer } from "@/components/payment/PaymentProofViewer";
 import { useAuth } from "@/context/AuthContext";
-import { AlertCircle, ClipboardList, Factory, Palette, Send, Check, Circle, CheckCircle, MinusCircle, Clock, Package, FileText, MessageCircle, Phone, CreditCard } from "lucide-react";
+import { AlertCircle, ClipboardList, Factory, Palette, Send, Check, Circle, CheckCircle, MinusCircle, Clock, Package, FileText, MessageCircle, Phone, CreditCard, Image } from "lucide-react";
 import {
   addTracking,
   createProduksi,
@@ -491,26 +491,33 @@ function AdminDetailInner() {
           <p className="mt-2 text-sm text-zinc-600">
             Status: <strong className="text-ink">{order.status_pembayaran ?? "menunggu"}</strong>
           </p>
-          {order.bukti_pembayaran_url === "supabase:private" ? (
-            <PaymentProofLink
-              orderId={order.id}
-              proofUrl={order.bukti_pembayaran_url}
-              className="mt-3 inline-flex font-medium text-cyan underline underline-offset-2"
-            >
-              Lihat bukti pembayaran
-            </PaymentProofLink>
-          ) : order.bukti_pembayaran_url ? (
-            <a
-              href={order.bukti_pembayaran_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex font-medium text-cyan underline underline-offset-2"
-            >
-              Lihat bukti pembayaran
-            </a>
-          ) : (
-            <p className="mt-3 text-sm text-zinc-500">Customer belum mengirim bukti pembayaran.</p>
-          )}
+    {order.bukti_pembayaran_url ? (
+      <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-ink">Bukti Pembayaran</h3>
+          <span className="text-xs font-medium text-moon-blue">
+            {order.bukti_pembayaran_url === "supabase:private"
+              ? "Supabase Storage (privat)"
+              : "Firebase Storage (publik)"}
+          </span>
+        </div>
+        <PaymentProofViewer
+          orderId={order.id}
+          proofUrl={order.bukti_pembayaran_url}
+          className="w-full justify-center"
+        >
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- ikon SVG dekoratif */}
+          <Image className="h-4 w-4" aria-hidden="true" />
+          Lihat bukti pembayaran
+        </PaymentProofViewer>
+      </div>
+    ) : (
+      <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 flex flex-col items-center justify-center text-center">
+        {/* eslint-disable-next-line jsx-a11y/alt-text -- ikon SVG dekoratif */}
+        <Image className="h-8 w-8 mb-2 text-zinc-400" aria-hidden="true" />
+        <p className="text-sm text-zinc-500">Customer belum mengirim bukti pembayaran.</p>
+      </div>
+    )}
           {order.status_pembayaran === "bukti_dikirim" && (
             <div className="mt-4">
               <PrimaryButton disabled={busy} onClick={konfirmasiPembayaran}>

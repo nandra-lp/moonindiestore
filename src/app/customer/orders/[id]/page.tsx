@@ -56,7 +56,7 @@ function DetailInner() {
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofError, setProofError] = useState<string | null>(null);
   const [proofSuccess, setProofSuccess] = useState<string | null>(null);
-  const [proofStage, setProofStage] = useState<"uploading" | "saving" | null>(null);
+  const [proofStage, setProofStage] = useState<"preparing" | "uploading" | "saving" | null>(null);
   const [proofProgress, setProofProgress] = useState(0);
   const [uploadedProof, setUploadedProof] = useState<{
     file: File;
@@ -140,13 +140,14 @@ function DetailInner() {
       let proof =
         uploadedProof?.file === proofFile ? uploadedProof.proof : null;
       if (!proof) {
-        setProofStage("uploading");
-        proof = await uploadBuktiPembayaran(
-          proofFile,
-          order.id,
-          firebaseUser,
-          setProofProgress
-        );
+        setProofStage("preparing");
+      proof = await uploadBuktiPembayaran(
+        proofFile,
+        order.id,
+        firebaseUser,
+        setProofProgress,
+        (status) => setProofStage(status)
+      );
         setUploadedProof({ file: proofFile, proof });
         hasUploadedProof = true;
       }
@@ -507,7 +508,7 @@ function DetailInner() {
                     </span>
                   </p>
                 )}
-                {uploadingProof && proofStage === "uploading" && (
+                {uploadingProof && (proofStage === "preparing" || proofStage === "uploading") && (
                   <div
                     className="space-y-2"
                     role="progressbar"
@@ -517,7 +518,9 @@ function DetailInner() {
                     aria-valuenow={proofProgress}
                   >
                     <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="font-medium text-ink">Mengunggah file</span>
+                      <span className="font-medium text-ink">
+                        {proofStage === "preparing" ? "Menyediakan unggahan…" : "Mengunggah file"}
+                      </span>
                       <span className="tabular-nums text-zinc-600">{proofProgress}%</span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-zinc-200">
@@ -549,13 +552,15 @@ function DetailInner() {
                   className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ink/90 focus-visible:outline-2 focus-visible:outline-moon-blue focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
                   <Upload className="h-4 w-4" aria-hidden="true" />
-                  {proofStage === "uploading"
-                    ? "Mengunggah bukti…"
-                    : proofStage === "saving"
-                      ? "Menyimpan status…"
-                    : order.status_pembayaran === "bukti_dikirim"
-                      ? "Kirim bukti pengganti"
-                      : "Kirim bukti pembayaran"}
+                  {proofStage === "preparing"
+                    ? "Menyediakan unggahan…"
+                    : proofStage === "uploading"
+                      ? "Mengunggah bukti…"
+                      : proofStage === "saving"
+                        ? "Menyimpan status…"
+                        : order.status_pembayaran === "bukti_dikirim"
+                          ? "Kirim bukti pengganti"
+                          : "Kirim bukti pembayaran"}
                 </button>
               </form>
             </>

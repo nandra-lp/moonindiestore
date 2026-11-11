@@ -481,6 +481,38 @@ export function EmptyRow({ children }: { children: ReactNode }) {
   );
 }
 
+// Dialog / modal primer untuk menampilkan konten dalam layar tertutup (cth. pratinjau bukti pembayaran).
+export function Dialog({
+  open,
+  onOpenChange,
+  children,
+  className = "",
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={() => onOpenChange(false)}
+      />
+      <div
+        className={`relative w-full max-w-xl mx-4 rounded-2xl bg-white shadow-2xl border border-zinc-200 p-6 max-h-[85vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 ${className}`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 const thumbSizes: Record<"sm" | "md" | "lg", string> = {
   sm: "h-10 w-10 text-lg",
   md: "h-14 w-14 text-2xl",
