@@ -2,9 +2,8 @@ import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Request, Response } from "express";
 import { defineSecret, defineString } from "firebase-functions/params";
-import { onRequest } from "firebase-functions/v2/https";
+import { onRequest, type Request, type Response } from "firebase-functions/v2/https";
 
 const REGION = "asia-southeast1";
 const PAYMENT_PROOFS_BUCKET = "payment-proofs";
